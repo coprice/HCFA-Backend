@@ -2,6 +2,7 @@ from sanic.response import json as json_response, html
 from sanic import Blueprint
 
 from mailer.mailer import mailer
+from template_loader.template_loader import template
 from db.db import db
 
 
@@ -185,8 +186,8 @@ async def display_request(request):
     except:
         return json_response({'error': 'Bad request'}, status=400)
 
-    file = open('static/templates/request.html')
-    return html(file.read().replace('\n', ''))
+    return html(template('request.html').render())
+
 
 # POST - /courses/request/complete
 @courses.route(baseURI + '/request/complete', methods=['POST'])
