@@ -5,9 +5,7 @@ body {
 	background: #f0f8ff;
 }
 
-h1, h2, h3, h4, h5, h6, p, li {
-	font-weight: normal;
-	font-family: Georgia;
+font-family: Georgia;
 }
 
 h1 {
@@ -15,16 +13,6 @@ h1 {
 	font-size: 2em;
 	font-weight: normal;
 	line-height: 1em;
-}
-
-hr {
-	margin-bottom: 50px;
-}
-
-p {
-	font-size: 18px;
-	color: #444;
-	line-height: 2em;
 }
 
 .fluid {

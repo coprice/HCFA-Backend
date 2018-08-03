@@ -205,24 +205,34 @@ async def display_request(request):
     message = 'Add {} ({} {}) to {} {} {}?'.format(email, first, last,
                                                    leader, year, gender)
 
-    return html(template('request.html').render(message=message))
-
+    return html(template('request.html').render(message=message, base='courses'))
 
 # POST - /courses/request/complete
+# {
+#     uid: Int,
+#     cid: Int,
+#     email: String,
+#     password: String
+# }
 @courses.route(baseURI + '/request/complete', methods=['POST'])
 async def complete_request(request):
     body = request.json
 
-    # if 'uid' not in body or 'cid' not in body:
-    #     return json_response({'error': 'Bad request'}, status=400)
+    if 'uid' not in body or 'cid' not in body or 'email' not in body or \
+        'password' not in body:
+        return json_response({'error': 'Bad request'}, status=400)
 
-    # uid, cid = None, None
+    uid, cid = None, None
 
-    # try:
-    #     uid, cid = int(body['uid']), int(body['cid'])
-    # except:
-    #     return json_response({'error': 'Bad request'}, status=400)
+    try:
+        uid, cid = int(body['uid']), int(body['cid'])
+    except:
+        return json_response({'error': 'Bad request'}, status=400)
 
-    print(body)
+    res = db.complete_course_request(body['uid'], body['cid'],
+                                     body['email'], body['password'])
 
-    return json_response(body, status=200)
+    if 'error' in res:
+        return json_response({'error': res['error']}, status=200)
+
+    return json_response(res, status=200)
