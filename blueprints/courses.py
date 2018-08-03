@@ -1,4 +1,4 @@
-from sanic.response import json as json_response, html
+from sanic.response import json as json_response, html, redirect
 from sanic import Blueprint
 
 from mailer.mailer import mailer
@@ -171,7 +171,7 @@ async def prepare_course_request(request):
 
     return json_response({}, status=200)
 
-# GET - /courses/request?uid={uid}&cid={cid}
+# GET - /courses/request?uid={uid}&cid={cid}&error={error}
 @courses.route(baseURI + '/request', methods=['GET'])
 async def display_request(request):
     args = request.args
@@ -205,7 +205,15 @@ async def display_request(request):
     message = 'Add {} ({} {}) to {} {} {}?'.format(email, first, last,
                                                    leader, year, gender)
 
-    return html(template('request.html').render(message=message, base='courses'))
+    action = '{}/request/complete'.format(baseURI)
+
+    if 'error' in args:
+        return html(template('request.html').\
+            render(message=message, action=action, uid=uid,
+                   cid=cid, error=args['error'][0]))
+    else:
+        return html(template('request.html').\
+            render(message=message, action=action, uid=uid, cid=cid))
 
 # POST - /courses/request/complete
 # {
@@ -216,23 +224,23 @@ async def display_request(request):
 # }
 @courses.route(baseURI + '/request/complete', methods=['POST'])
 async def complete_request(request):
-    body = request.json
+    form = request.form
 
-    if 'uid' not in body or 'cid' not in body or 'email' not in body or \
-        'password' not in body:
-        return json_response({'error': 'Bad request'}, status=400)
+    if 'uid' not in form or 'cid' not in form or 'email' not in form or \
+        'password' not in form:
+        return html('Bad Request')
 
     uid, cid = None, None
 
     try:
-        uid, cid = int(body['uid']), int(body['cid'])
+        uid, cid = int(form['uid'][0]), int(form['cid'][0])
     except:
-        return json_response({'error': 'Bad request'}, status=400)
+        return html('Bad Request')
 
-    res = db.complete_course_request(body['uid'], body['cid'],
-                                     body['email'], body['password'])
+    res = db.complete_course_request(uid, cid, form['email'][0],
+                                     form['password'][0])
 
     if 'error' in res:
-        return json_response({'error': res['error']}, status=200)
+        return redirect('{}/request?uid={}&cid={}&error={}'.format(baseURI, uid, cid, res['error']))
 
-    return json_response(res, status=200)
+    return html('Success! User was added to the bible course!')

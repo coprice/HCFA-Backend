@@ -23,18 +23,18 @@
 </head>
 <body>
 <div class='ui text container'>
-
-  {% if error %}
-  <div class="ui red message">{{error}}</div>
-  {% endif %}
-
   <h1 id="title">
     {{message}}
   </h1>
   <br>
-  <div id="messageDiv"></div>
-  <div id="loadDiv"></div>
-  <div id="form" name={{base}}>
+  <div id="messageDiv">
+    {% if error %}
+    <div class="ui red message">{{error}}</div><br>
+    {% endif %}
+  </div>
+  <form class="ui form" id="form" action={{action}} method='post' onsubmit="return submitClicked()">
+    <input type="hidden" id="uid" name="uid" value={{uid}}>
+    <input type="hidden" id="cid" name="cid" value={{cid}}>
     <div class="ui grid">
     <div class="ui form six wide column centered">
     <div class="one field">
@@ -58,8 +58,8 @@
     </div>
     </div>
     <br>
-    <div class="ui submit button" onclick="return submitClicked()">Submit</div>
-  </div>
+    <div class="ui submit button">Submit</div>
+  </form>
 </div>
 </body>
 </html>

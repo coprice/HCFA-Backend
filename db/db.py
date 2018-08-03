@@ -594,7 +594,7 @@ class DB:
             """,
             (uid, cid))
 
-        if not self.db.fetchone is None:
+        if not self.db.fetchone() is None:
             return {'error': 'User already is in this course'}
 
         self.db.execute("""
