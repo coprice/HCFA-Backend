@@ -177,22 +177,22 @@ async def display_request(request):
     args = request.args
 
     if 'uid' not in args or 'cid' not in args:
-        return html('Bad request')
+        return html(template('response.html').render(message='Error: Bad Request', error=True))
 
     uid, cid = None, None
 
     try:
         uid, cid = int(args['uid'][0]), int(args['cid'][0])
     except:
-        return html('Bad request')
+        return html(template('response.html').render(message='Error: Bad Request', error=True))
 
     user = db.get_users_info(uid)
     course = db.get_course_info(cid)
 
     if user is None:
-        return html('User does not exist')
+        return html(template('response.html').render(message='Error: User does not exist', error=True))
     if course is None:
-        return html('Course does not exist')
+        return html(template('response.html').render(message='Error: Course no longer exists', error=True))
 
     first, last, email = user
     leader, year, gender = course
@@ -210,10 +210,11 @@ async def display_request(request):
     if 'error' in args:
         return html(template('request.html').\
             render(message=message, action=action, uid=uid,
-                   cid=cid, error=args['error'][0]))
+                   group_id=cid, id_name='cid', error=args['error'][0]))
     else:
         return html(template('request.html').\
-            render(message=message, action=action, uid=uid, cid=cid))
+            render(message=message, action=action, uid=uid,
+                   group_id=cid, id_name='cid'))
 
 # POST - /courses/request/complete
 # {
@@ -228,14 +229,14 @@ async def complete_request(request):
 
     if 'uid' not in form or 'cid' not in form or 'email' not in form or \
         'password' not in form:
-        return html('Error: Bad Request')
+        return redirect('{}/request/completed?msg={}'.format(baseURI, 'Error: Bad Request'))
 
     uid, cid = None, None
 
     try:
         uid, cid = int(form['uid'][0]), int(form['cid'][0])
     except:
-        return html('Error: Bad Request')
+        return redirect('{}/request/completed?msg={}'.format(baseURI, 'Error: Bad Request'))
 
     res = db.complete_course_request(uid, cid, form['email'][0],
                                      form['password'][0])
@@ -243,4 +244,14 @@ async def complete_request(request):
     if 'error' in res:
         return redirect('{}/request?uid={}&cid={}&error={}'.format(baseURI, uid, cid, res['error']))
 
-    return html('Success! User was added to the course.')
+    return redirect('{}/request/completed?msg={}'.format(baseURI, 'Success! User was added to the course.'))
+
+# GET - /courses/request/completed?msg={message}
+@courses.route(baseURI + '/request/completed', methods=['GET'])
+async def completed(request):
+    args = request.args
+
+    if 'msg' not in args:
+        return html(template('response.html').render(message='Error: Bad Request', error=True))
+        
+    return html(template('response.html').render(message=args['msg'][0]))

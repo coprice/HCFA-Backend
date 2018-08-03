@@ -852,6 +852,47 @@ class DB:
             'admins': map(lambda x: ('{} {}'.format(x[0], x[1]), x[2]), self.db.fetchall())
         }
 
+    def complete_team_request(self, uid, tid, email, password):
+
+        pass_hash = hashlib.sha1(password.encode('utf-8')).hexdigest()
+
+        self.db.execute("""
+                SELECT admin, uid FROM users WHERE email = %s AND pass = %s
+            """,
+            (email, pass_hash))
+
+        user = self.db.fetchone()
+
+        if user is None:
+            return {'error': 'Invalid email or password'}
+
+        (admin, admin_uid) = user
+
+        self.db.execute("""
+                SELECT is_admin FROM team_members WHERE uid = %s AND tid = %s
+            """,
+            (admin_uid, tid))
+
+        res = self.db.fetchone()
+
+        if res is None and not admin or (res is not None and not (res[0] or admin)):
+            return {'error': 'You are not an admin for this team'}
+
+        self.db.execute("""
+                SELECT uid FROM team_members WHERE uid = %s AND tid = %s
+            """,
+            (uid, tid))
+
+        if not self.db.fetchone() is None:
+            return {'error': 'User already is in this team'}
+
+        self.db.execute("""
+                INSERT INTO team_members (uid, tid) VALUES (%s, %s)
+            """,
+            (uid, tid))
+
+        return {}
+
     def get_users_info(self, uid):
 
         self.db.execute("""

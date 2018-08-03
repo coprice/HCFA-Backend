@@ -1,6 +1,8 @@
-from sanic.response import json as json_response
+from sanic.response import json as json_response, html, redirect
 from sanic import Blueprint
 
+from mailer.mailer import mailer
+from template_loader.template_loader import template
 from db.db import db
 
 
@@ -129,11 +131,11 @@ async def leave_team(request):
 
     return json_response(res, status=200)
 
-# POST - /courses/request
+# POST - /teams/request
 # {
 #     uid: Int,
 #     token: String,
-#     cid: Int,
+#     tid: Int,
 #     message: [Optional] String
 # }
 @teams.route(baseURI + '/request/prepare', methods=['POST'])
@@ -153,3 +155,80 @@ async def prepare_team_request(request):
                         res['admins'], 'Ministry Team')
 
     return json_response(res, status=201)
+
+# GET - /teams/request?uid={uid}&tid={tid}&error={error}
+@teams.route(baseURI + '/request', methods=['GET'])
+async def display_request(request):
+    args = request.args
+
+    if 'uid' not in args or 'tid' not in args:
+        return html(template('response.html').render(message='Error: Bad Request', error=True))
+
+    uid, tid = None, None
+
+    try:
+        uid, tid = int(args['uid'][0]), int(args['tid'][0])
+    except:
+        return html(template('response.html').render(message='Error: Bad Request', error=True))
+
+    user = db.get_users_info(uid)
+    team = db.get_team_info(tid)
+
+    if user is None:
+        return html(template('response.html').render(message='Error: User does not exist', error=True))
+    if team is None:
+        return html(template('response.html').render(message='Error: Team does not exist', error=True))
+
+    first, last, email = user
+    (name,) = team
+
+    message = 'Add {} ({} {}) to {}?'.format(email, first, last, name)
+    action = '{}/request/complete'.format(baseURI)
+
+    if 'error' in args:
+        return html(template('request.html').\
+            render(message=message, action=action, uid=uid,
+                   group_id=tid, id_name='tid', error=args['error'][0]))
+    else:
+        return html(template('request.html').\
+            render(message=message, action=action, uid=uid,
+                   group_id=tid, id_name='tid'))
+
+# POST - /teams/request/complete
+# {
+#     uid: Int,
+#     tid: Int,
+#     email: String,
+#     password: String
+# }
+@teams.route(baseURI + '/request/complete', methods=['POST'])
+async def complete_request(request):
+    form = request.form
+
+    if 'uid' not in form or 'tid' not in form or 'email' not in form or \
+        'password' not in form:
+        return redirect('{}/request/completed?msg={}'.format(baseURI, 'Error: Bad Request'))
+
+    uid, tid = None, None
+
+    try:
+        uid, tid = int(form['uid'][0]), int(form['tid'][0])
+    except:
+        return redirect('{}/request/completed?msg={}'.format(baseURI, 'Error: Bad Request'))
+
+    res = db.complete_team_request(uid, tid, form['email'][0], form['password'][0])
+
+    if 'error' in res:
+        return redirect('{}/request?uid={}&tid={}&error={}'.format(baseURI, uid, tid, res['error']))
+
+    return redirect('{}/request/completed?msg={}'.format(baseURI, 'Success! User was added to the team.'))
+
+# GET - /teams/request/completed?msg={message}
+@teams.route(baseURI + '/request/completed', methods=['GET'])
+async def completed(request):
+    args = request.args
+
+    if 'msg' not in args:
+        return html(template('response.html').render(message='Error: Bad Request', error=True))
+        
+    return html(template('response.html').render(message=args['msg'][0]))

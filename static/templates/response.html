@@ -1,0 +1,11 @@
+{% extends "layout.html" %}
+
+{% block body %}
+<div class='ui text container'>
+  {% if error %}
+    <div class="ui red message">{{message}}</div><br>
+  {% else %}
+    <div class="ui green message">{{message}}</div><br>
+  {% endif %}
+</div>
+{% endblock %}

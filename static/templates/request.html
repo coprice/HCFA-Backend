@@ -2,7 +2,7 @@
 
 {% block body %}
 <div class='ui text container'>
-  <h1 id="title">
+  <h1>
     {{message}}
   </h1>
   <br>
@@ -13,7 +13,7 @@
   </div>
   <form class="ui form" id="form" action={{action}} method='post' onsubmit="return submitClicked()">
     <input type="hidden" id="uid" name="uid" value={{uid}}>
-    <input type="hidden" id="cid" name="cid" value={{cid}}>
+    <input type="hidden" id={{id_name}} name={{id_name}} value={{group_id}}>
     <div class="ui grid">
     <div class="ui form six wide column centered">
     <div class="one field">
