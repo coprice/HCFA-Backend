@@ -228,14 +228,14 @@ async def complete_request(request):
 
     if 'uid' not in form or 'cid' not in form or 'email' not in form or \
         'password' not in form:
-        return html('Bad Request')
+        return html('Error: Bad Request')
 
     uid, cid = None, None
 
     try:
         uid, cid = int(form['uid'][0]), int(form['cid'][0])
     except:
-        return html('Bad Request')
+        return html('Error: Bad Request')
 
     res = db.complete_course_request(uid, cid, form['email'][0],
                                      form['password'][0])
@@ -243,4 +243,4 @@ async def complete_request(request):
     if 'error' in res:
         return redirect('{}/request?uid={}&cid={}&error={}'.format(baseURI, uid, cid, res['error']))
 
-    return html('Success! User was added to the bible course!')
+    return html('Success! User was added to the course.')
