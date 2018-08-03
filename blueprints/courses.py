@@ -177,16 +177,35 @@ async def display_request(request):
     args = request.args
 
     if 'uid' not in args or 'cid' not in args:
-        return json_response({'error': 'Bad request'}, status=400)
+        return html('Bad request')
 
     uid, cid = None, None
 
     try:
         uid, cid = int(args['uid'][0]), int(args['cid'][0])
     except:
-        return json_response({'error': 'Bad request'}, status=400)
+        return html('Bad request')
 
-    return html(template('request.html').render())
+    user = db.get_users_info(uid)
+    course = db.get_course_info(cid)
+
+    if user is None:
+        return html('User does not exist')
+    if course is None:
+        return html('Course does not exist')
+
+    first, last, email = user
+    leader, year, gender = course
+
+    if leader.endswith('s'):
+        leader += "'"
+    else:
+        leader += "'s"
+
+    message = 'Add {} ({} {}) to {} {} {}?'.format(email, first, last,
+                                                   leader, year, gender)
+
+    return html(template('request.html').render(message=message))
 
 
 # POST - /courses/request/complete
@@ -194,14 +213,16 @@ async def display_request(request):
 async def complete_request(request):
     body = request.json
 
-    if 'uid' not in body or 'cid' not in body:
-        return json_response({'error': 'Bad request'}, status=400)
+    # if 'uid' not in body or 'cid' not in body:
+    #     return json_response({'error': 'Bad request'}, status=400)
 
-    uid, cid = None, None
+    # uid, cid = None, None
 
-    try:
-        uid, cid = int(body['uid']), int(body['cid'])
-    except:
-        return json_response({'error': 'Bad request'}, status=400)
+    # try:
+    #     uid, cid = int(body['uid']), int(body['cid'])
+    # except:
+    #     return json_response({'error': 'Bad request'}, status=400)
+
+    print(body)
 
     return json_response(body, status=200)

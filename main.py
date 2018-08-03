@@ -8,6 +8,9 @@ from blueprints.healthcheck import healthcheck
 
 
 app = Sanic()
+
+app.static('/static', './static')
+
 app.blueprint(users)
 app.blueprint(events)
 app.blueprint(courses)

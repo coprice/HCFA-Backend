@@ -811,9 +811,37 @@ class DB:
             'admins': map(lambda x: ('{} {}'.format(x[0], x[1]), x[2]), self.db.fetchall())
         }
 
+    def get_users_info(self, uid):
+
+        self.db.execute("""
+                SELECT first_name, last_name, email FROM users WHERE uid = %s
+            """,
+            (uid,))
+
+        return self.db.fetchone()
+
+    def get_course_info(self, cid):
+
+        self.db.execute("""
+                SELECT leader_first, course_year, gender
+                FROM courses WHERE cid = %s
+            """,
+            (cid,))
+
+        return self.db.fetchone()
+
+    def get_team_info(self, tid):
+
+        self.db.execute("""
+                SELECT name FROM teams WHERE tid = %s
+            """,
+            (tid,))
+
+        return self.db.fetchone()
+
+
 
     ### HELPERS ###
-
 
     def get_user_ids(self, members, admins):
         member_ids = []
