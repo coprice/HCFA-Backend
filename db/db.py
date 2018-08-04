@@ -172,12 +172,22 @@ class DB:
     def update_contact(self, uid, token, first, last, email):
 
         self.db.execute("""
-                SELECT uid FROM users WHERE uid = %s AND token = %s
+                SELECT email FROM users WHERE uid = %s AND token = %s
             """,
             (uid, token))
 
-        if self.db.fetchone() is None:
+        res = self.db.fetchone()
+        if res is None:
             return {'error': 'Session Expired', 'status': 403}
+
+        if res[0] != email:
+            self.db.execute("""
+                    SELECT uid FROM users WHERE email = %s
+                """,
+                (email,))
+
+            if not self.db.fetchone() is None:
+                return {'error': 'Account already exists with given email', 'status': 409}
 
         self.db.execute("""
                 UPDATE users SET first_name = %s, last_name = %s, email = %s
@@ -540,7 +550,7 @@ class DB:
 
         return {}
 
-    def prepare_course_request(self, uid, token, cid):
+    def send_course_request(self, uid, token, cid):
 
         self.db.execute("""
                 SELECT first_name, last_name, email FROM users WHERE uid = %s AND token = %s
@@ -550,6 +560,14 @@ class DB:
         user = self.db.fetchone()
         if user is None:
             return {'error': 'Session Expired', 'status': 403}
+
+        self.db.execute("""
+                SELECT cid FROM courses WHERE cid = %s
+            """,
+            (cid,))
+
+        if self.db.fetchone() is None:
+            return {'error': 'Course does not exist', 'status': 409}
 
         self.db.execute("""
                 SELECT first_name, last_name, email FROM
@@ -829,7 +847,7 @@ class DB:
 
         return {}
 
-    def prepare_team_request(self, uid, token, tid):
+    def send_team_request(self, uid, token, tid):
 
         self.db.execute("""
                 SELECT first_name, last_name, email FROM users WHERE uid = %s AND token = %s
@@ -839,6 +857,14 @@ class DB:
         user = self.db.fetchone()
         if user is None:
             return {'error': 'Session Expired', 'status': 403}
+
+        self.db.execute("""
+                SELECT tid FROM teams WHERE tid = %s
+            """,
+            (tid,))
+
+        if self.db.fetchone() is None:
+            return {'error': 'Team does not exist', 'status': 409}
 
         self.db.execute("""
                 SELECT first_name, last_name, email FROM

@@ -140,29 +140,31 @@ async def leave_course(request):
 
     return json_response(res, status=200)
 
-# POST - /courses/request
+# POST - /courses/request/send
 # {
 #     uid: Int,
 #     token: String,
 #     cid: Int,
 #     message: [Optional] String
 # }
-@courses.route(baseURI + '/request/prepare', methods=['POST'])
-async def prepare_course_request(request):
+@courses.route(baseURI + '/request/send', methods=['POST'])
+async def send_course_request(request):
     body = request.json
 
     if 'uid' not in body or 'token' not in body or 'cid' not in body or \
         'message' not in body:
         return json_response({'error': 'Bad request'}, status=400)
 
-    res = db.prepare_course_request(body['uid'], body['token'], body['cid'])
+    uid, cid = body['uid'], body['cid']
+    res = db.send_course_request(uid, body['token'], cid)
 
     if 'error' in res:
         return json_response({'error': res['error']}, status=res['status'])
 
-    link = '0.0.0.0:8080{}}/request?uid={}&cid={}'.format(baseURI, uid, cid)
+    link = '{}?uid={}&cid={}'.\
+        format(request.url.replace('/send', ''), uid, cid)
     mailer.send_message(res['user'][0], res['user'][1], body['message'],
-                        res['admins'], 'Bible Course', link)
+                        'Bible Course', link, res['admins'])
 
     return json_response({}, status=200)
 
@@ -175,15 +177,17 @@ async def display_request(request):
         return html(template('response.html').\
             render(message='Error: Bad Request', error=True))
 
-    user = db.get_users_info(args['uid'][0])
-    course = db.get_course_info(args['cid'][0])
+    uid, cid = args['uid'][0], args['cid'][0]
+    user = db.get_users_info(uid)
+    course = db.get_course_info(cid)
 
     if user is None:
         return html(template('response.html').\
             render(message='Error: User does not exist', error=True))
     if course is None:
         return html(template('response.html').\
-            render(message='Error: Course no longer exists', error=True))
+            render(message='Error: Course does not exist (or no longer exists)',
+                   error=True))
 
     first, last, email = user
     leader, year, gender = course
@@ -193,7 +197,7 @@ async def display_request(request):
     else:
         leader += "'s"
 
-    message = 'Add {} ({} {}) to {} {} {}?'.format(email, first, last,
+    message = 'Sign in to add {} ({} {}) to {} {} {}'.format(email, first, last,
                                                    leader, year, gender)
 
     action = '{}/request/complete'.format(baseURI)
@@ -223,7 +227,7 @@ async def complete_request(request):
         return redirect('{}/request/completed?msg={}'.\
             format(baseURI, 'Error: Bad Request'))
 
-    res = db.complete_course_request(form['uid'][0], form['tid'][0],
+    res = db.complete_course_request(form['uid'][0], form['cid'][0],
                                      form['email'][0], form['password'][0])
 
     if 'error' in res:

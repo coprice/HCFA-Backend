@@ -132,29 +132,30 @@ async def leave_team(request):
 
     return json_response(res, status=200)
 
-# POST - /teams/request
+# POST - /teams/request/send
 # {
 #     uid: Int,
 #     token: String,
 #     tid: Int,
 #     message: [Optional] String
 # }
-@teams.route(baseURI + '/request/prepare', methods=['POST'])
-async def prepare_team_request(request):
+@teams.route(baseURI + '/request/send', methods=['POST'])
+async def send_team_request(request):
     body = request.json
 
     if 'uid' not in body or 'token' not in body or 'tid' not in body or \
         'message' not in body:
         return json_response({'error': 'Bad request'}, status=400)
 
-    res = db.prepare_team_request(body['uid'], body['token'], body['tid'])
+    uid, tid = body['uid'], body['tid']
+    res = db.send_team_request(uid, body['token'], tid)
 
     if 'error' in res:
         return json_response({'error': res['error']}, status=res['status'])
 
     link = '0.0.0.0:8080{}/request?uid={}&tid={}'.format(baseURI, uid, tid)
     mailer.send_message(res['user'][0], res['user'][1], body['message'],
-                        res['admins'], 'Ministry Team', link)
+                        'Ministry Team', link, res['admins'])
 
     return json_response(res, status=201)
 
@@ -167,20 +168,22 @@ async def display_request(request):
         return html(template('response.html').\
             render(message='Error: Bad Request', error=True))
 
-    user = db.get_users_info(args['uid'][0])
-    team = db.get_team_info(args['tid'][0])
+    uid, tid = args['uid'][0], args['tid'][0]
+    user = db.get_users_info(uid)
+    team = db.get_team_info(tid)
 
     if user is None:
         return html(template('response.html').\
             render(message='Error: User does not exist', error=True))
     if team is None:
         return html(template('response.html').\
-            render(message='Error: Team does not exist', error=True))
+            render(message='Error: Team does not exist (or no longer exists)',
+                   error=True))
 
     first, last, email = user
     (name,) = team
 
-    message = 'Add {} ({} {}) to {}?'.format(email, first, last, name)
+    message = 'Sign in to add {} ({} {}) to {}'.format(email, first, last, name)
     action = '{}/request/complete'.format(baseURI)
 
     if 'error' in args:
