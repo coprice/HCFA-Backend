@@ -349,8 +349,8 @@ class DB:
         courses = self.db.fetchall()
 
         self.db.execute("""
-                SELECT cid, first_name, last_name, email, is_admin FROM
-                course_members JOIN users ON course_members.uid = users.uid
+                SELECT cid, first_name, last_name, email, is_admin, profile
+                FROM course_members JOIN users ON course_members.uid = users.uid
             """)
 
         users = self.db.fetchall()
@@ -711,7 +711,7 @@ class DB:
         teams = self.db.fetchall()
 
         self.db.execute("""
-                SELECT tid, first_name, last_name, email, is_admin FROM
+                SELECT tid, first_name, last_name, email, is_admin, profile FROM
                 team_members JOIN users ON team_members.uid = users.uid
             """)
         users = self.db.fetchall()
@@ -1096,16 +1096,16 @@ class DB:
 
     def extract_user_info(self, uid, users):
 
-        member_names, member_emails = [], []
+        member_info, member_emails = [], []
         for user in filter(lambda user: user[0] == uid and not user[4], users):
-            member_names.append('{} {}'.format(user[1], user[2]))
+            member_info.append(('{} {}'.format(user[1], user[2]), user[5]))
             member_emails.append(user[3])
 
         admin_emails = []
         for user in filter(lambda user: user[0] == uid and user[4], users):
             admin_emails.append(user[3])
 
-        return ({'names': member_names, 'emails': member_emails},
+        return ({'info': member_info, 'emails': member_emails},
                 {'emails': admin_emails})
 
     def format_team(self, team, users):
