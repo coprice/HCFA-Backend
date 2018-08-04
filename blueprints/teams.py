@@ -153,22 +153,28 @@ async def send_team_request(request):
     if 'error' in res:
         return json_response({'error': res['error']}, status=res['status'])
 
-    link = '0.0.0.0:8080{}/request?uid={}&tid={}'.format(baseURI, uid, tid)
+    link = '{}?uid={}&tid={}&token={}'.\
+        format(request.url.replace('/send', ''), uid, tid, res['token'])
     mailer.send_message(res['user'][0], res['user'][1], body['message'],
                         'Ministry Team', link, res['admins'])
 
-    return json_response(res, status=201)
+    return json_response({}, status=201)
 
 # GET - /teams/request?uid={uid}&tid={tid}&error={error}
 @teams.route(baseURI + '/request', methods=['GET'])
 async def display_request(request):
     args = request.args
 
-    if 'uid' not in args or 'tid' not in args:
+    if 'uid' not in args or 'tid' not in args or 'token' not in args:
         return html(template('response.html').\
             render(message='Error: Bad Request', error=True))
 
-    uid, tid = args['uid'][0], args['tid'][0]
+    uid, tid, token = args['uid'][0], args['tid'][0], args['token'][0]
+
+    if not db.validate_team_request(uid, tid, token):
+        return html(template('response.html').\
+            render(message='Error: Invalid or expired request', error=True))
+
     user = db.get_users_info(uid)
     team = db.get_team_info(tid)
 
@@ -188,12 +194,12 @@ async def display_request(request):
 
     if 'error' in args:
         return html(template('request.html').\
-            render(message=message, action=action, uid=uid,
-                   group_id=tid, id_name='tid', error=args['error'][0]))
+            render(message=message, action=action, uid=uid, group_id=tid,
+                   token=token, id_name='tid', error=args['error'][0]))
     else:
         return html(template('request.html').\
-            render(message=message, action=action, uid=uid,
-                   group_id=tid, id_name='tid'))
+            render(message=message, action=action, uid=uid, group_id=tid,
+                   token=token, id_name='tid'))
 
 # POST - /teams/request/complete
 # {
@@ -207,16 +213,18 @@ async def complete_request(request):
     form = request.form
 
     if 'uid' not in form or 'tid' not in form or 'email' not in form or \
-        'password' not in form:
+        'password' not in form or 'token' not in form:
         return redirect('{}/request/completed?msg={}'.\
             format(baseURI, 'Error: Bad Request'))
 
-    res = db.complete_team_request(form['uid'][0], form['tid'][0],
-                                   form['email'][0], form['password'][0])
+    uid, tid, token = form['uid'][0], form['tid'][0], form['token'][0]
+
+    res = db.complete_team_request(uid, tid, token, form['email'][0],
+                                   form['password'][0])
 
     if 'error' in res:
-        return redirect('{}/request?uid={}&tid={}&error={}'.\
-            format(baseURI, uid, tid, res['error']))
+        return redirect('{}/request?uid={}&tid={}&token={}&error={}'.\
+            format(baseURI, uid, tid, token, res['error']))
 
     return redirect('{}/request/completed?msg={}'.\
         format(baseURI, 'Success! User was added to the team.'))

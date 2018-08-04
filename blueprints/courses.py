@@ -161,33 +161,37 @@ async def send_course_request(request):
     if 'error' in res:
         return json_response({'error': res['error']}, status=res['status'])
 
-    link = '{}?uid={}&cid={}'.\
-        format(request.url.replace('/send', ''), uid, cid)
+    link = '{}?uid={}&cid={}&token={}'.\
+        format(request.url.replace('/send', ''), uid, cid, res['token'])
     mailer.send_message(res['user'][0], res['user'][1], body['message'],
                         'Bible Course', link, res['admins'])
 
     return json_response({}, status=200)
 
-# GET - /courses/request?uid={uid}&cid={cid}&error={error}
+# GET - /courses/request?uid={uid}&cid={cid}&token={token}&error={error}
 @courses.route(baseURI + '/request', methods=['GET'])
 async def display_request(request):
     args = request.args
 
-    if 'uid' not in args or 'cid' not in args:
+    if 'uid' not in args or 'cid' not in args or 'token' not in args:
         return html(template('response.html').\
             render(message='Error: Bad Request', error=True))
 
-    uid, cid = args['uid'][0], args['cid'][0]
+    uid, cid, token = args['uid'][0], args['cid'][0], args['token'][0]
+
+    if not db.validate_course_request(uid, cid, token):
+        return html(template('response.html').\
+            render(message='Error: Invalid or expired request', error=True))
+
     user = db.get_users_info(uid)
     course = db.get_course_info(cid)
 
     if user is None:
         return html(template('response.html').\
-            render(message='Error: User does not exist', error=True))
+            render(message='Error: User no longer exists', error=True))
     if course is None:
         return html(template('response.html').\
-            render(message='Error: Course does not exist (or no longer exists)',
-                   error=True))
+            render(message='Error: Course no longer exists', error=True))
 
     first, last, email = user
     leader, year, gender = course
@@ -199,17 +203,16 @@ async def display_request(request):
 
     message = 'Sign in to add {} ({} {}) to {} {} {}'.format(email, first, last,
                                                    leader, year, gender)
-
     action = '{}/request/complete'.format(baseURI)
 
     if 'error' in args:
         return html(template('request.html').\
-            render(message=message, action=action, uid=uid,
-                   group_id=cid, id_name='cid', error=args['error'][0]))
+            render(message=message, action=action, uid=uid, group_id=cid,
+                   token=token, id_name='cid', error=args['error'][0]))
     else:
         return html(template('request.html').\
-            render(message=message, action=action, uid=uid,
-                   group_id=cid, id_name='cid'))
+            render(message=message, action=action, uid=uid, group_id=cid,
+                   token=token, id_name='cid'))
 
 # POST - /courses/request/complete
 # {
@@ -223,16 +226,18 @@ async def complete_request(request):
     form = request.form
 
     if 'uid' not in form or 'cid' not in form or 'email' not in form or \
-        'password' not in form:
+        'password' not in form or 'token' not in form:
         return redirect('{}/request/completed?msg={}'.\
             format(baseURI, 'Error: Bad Request'))
 
-    res = db.complete_course_request(form['uid'][0], form['cid'][0],
-                                     form['email'][0], form['password'][0])
+    uid, cid, token = form['uid'][0], form['cid'][0], form['token'][0]
+
+    res = db.complete_course_request(uid, cid, token, form['email'][0],
+                                     form['password'][0])
 
     if 'error' in res:
-        return redirect('{}/request?uid={}&cid={}&error={}'.\
-            format(baseURI, uid, cid, res['error']))
+        return redirect('{}/request?uid={}&cid={}&token={}&error={}'.\
+            format(baseURI, uid, cid, token, res['error']))
 
     return redirect('{}/request/completed?msg={}'.\
         format(baseURI, 'Success! User was added to the course.'))

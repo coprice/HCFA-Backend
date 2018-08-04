@@ -187,7 +187,8 @@ class DB:
                 (email,))
 
             if not self.db.fetchone() is None:
-                return {'error': 'Account already exists with given email', 'status': 409}
+                return {'error': 'Account already exists with given email',
+                        'status': 409}
 
         self.db.execute("""
                 UPDATE users SET first_name = %s, last_name = %s, email = %s
@@ -553,7 +554,8 @@ class DB:
     def send_course_request(self, uid, token, cid):
 
         self.db.execute("""
-                SELECT first_name, last_name, email FROM users WHERE uid = %s AND token = %s
+                SELECT first_name, last_name, email FROM users
+                WHERE uid = %s AND token = %s
             """,
             (uid, token))
 
@@ -570,6 +572,34 @@ class DB:
             return {'error': 'Course does not exist', 'status': 409}
 
         self.db.execute("""
+                SELECT uid FROM course_members WHERE uid = %s AND cid = %s
+            """,
+            (uid, cid))
+
+        if not self.db.fetchone() is None:
+            return {'error': 'User already in this course', 'status': 403}
+
+        token = secrets.token_hex()
+
+        self.db.execute("""
+                SELECT uid FROM course_requests WHERE uid = %s AND cid = %s
+            """,
+            (uid, cid))
+
+        if self.db.fetchone() is None:
+            self.db.execute("""
+                    INSERT INTO course_requests (uid, cid, token)
+                    VALUES (%s, %s, %s)
+                """,
+                (uid, cid, token))
+        else:
+            self.db.execute("""
+                    UPDATE course_requests SET token = %s
+                    WHERE uid = %s AND cid = %s
+                """,
+                (token, uid, cid))
+
+        self.db.execute("""
                 SELECT first_name, last_name, email FROM
                 course_members JOIN users
                 ON course_members.uid = users.uid AND cid = %s AND is_admin = TRUE
@@ -578,10 +608,31 @@ class DB:
 
         return {
             'user': ('{} {}'.format(user[0], user[1]), user[2]),
-            'admins': map(lambda x: ('{} {}'.format(x[0], x[1]), x[2]), self.db.fetchall())
+            'admins': map(lambda adm: ('{} {}'.format(adm[0], adm[1]), adm[2]),
+                          self.db.fetchall()),
+            'token': token
         }
 
-    def complete_course_request(self, uid, cid, email, password):
+    def validate_course_request(self, uid, cid, token):
+
+        self.db.execute("""
+                SELECT uid FROM course_requests
+                WHERE uid = %s AND cid = %s AND token = %s
+            """,
+            (uid, cid, token))
+
+        return self.db.fetchone() is not None
+
+    def complete_course_request(self, uid, cid, token, email, password):
+
+        self.db.execute("""
+                SELECT uid FROM course_requests
+                WHERE uid = %s AND cid = %s AND token = %s
+            """,
+            (uid, cid, token))
+
+        if self.db.fetchone() is None:
+            return {'error': 'Invalid or expired request', 'status': 401}
 
         pass_hash = hashlib.sha1(password.encode('utf-8')).hexdigest()
 
@@ -593,7 +644,7 @@ class DB:
         user = self.db.fetchone()
 
         if user is None:
-            return {'error': 'Invalid email or password'}
+            return {'error': 'Invalid email or password', 'status': 401}
 
         (admin, admin_uid) = user
 
@@ -604,8 +655,10 @@ class DB:
 
         res = self.db.fetchone()
 
-        if res is None and not admin or (res is not None and not (res[0] or admin)):
-            return {'error': 'You are not an admin for this course'}
+        if res is None and not admin or \
+            (res is not None and not (res[0] or admin)):
+            return {'error': 'You are not an admin for this course',
+                    'status': 403}
 
         self.db.execute("""
                 SELECT uid FROM course_members WHERE uid = %s AND cid = %s
@@ -613,10 +666,15 @@ class DB:
             (uid, cid))
 
         if not self.db.fetchone() is None:
-            return {'error': 'User already is in this course'}
+            return {'error': 'User already is in this course', 'status': 409}
 
         self.db.execute("""
                 INSERT INTO course_members (uid, cid) VALUES (%s, %s)
+            """,
+            (uid, cid))
+
+        self.db.execute("""
+                DELETE FROM course_requests WHERE uid = %s AND cid = %s
             """,
             (uid, cid))
 
@@ -867,6 +925,34 @@ class DB:
             return {'error': 'Team does not exist', 'status': 409}
 
         self.db.execute("""
+                SELECT tid FROM team_members WHERE uid = %s AND tid = %s
+            """,
+            (uid, tid))
+
+        if not self.db.fetchone() is None:
+            return {'error': 'User already in this team', 'status': 403}
+
+        token = secrets.token_hex()
+
+        self.db.execute("""
+                SELECT tid FROM team_requests WHERE uid = %s AND tid = %s
+            """,
+            (uid, tid))
+
+        if self.db.fetchone() is None:
+            self.db.execute("""
+                    INSERT INTO team_requests (uid, tid, token)
+                    VALUES (%s, %s, %s)
+                """,
+                (uid, tid, token))
+        else:
+            self.db.execute("""
+                    UPDATE team_requests SET token = %s
+                    WHERE uid = %s AND tid = %s
+                """,
+                (token, uid, tid))
+
+        self.db.execute("""
                 SELECT first_name, last_name, email FROM
                 team_members JOIN users ON team_members.uid = users.uid
                     AND tid = %s AND is_admin = TRUE
@@ -875,10 +961,31 @@ class DB:
 
         return {
             'user': ('{} {}'.format(user[0], user[1]), user[2]),
-            'admins': map(lambda x: ('{} {}'.format(x[0], x[1]), x[2]), self.db.fetchall())
+            'admins': map(lambda x: ('{} {}'.format(x[0], x[1]), x[2]),
+                          self.db.fetchall()),
+            'token': token
         }
 
-    def complete_team_request(self, uid, tid, email, password):
+    def validate_team_request(self, uid, tid, token):
+
+        self.db.execute("""
+                SELECT tid FROM team_requests
+                WHERE uid = %s AND tid = %s AND token = %s
+            """,
+            (uid, tid, token))
+
+        return self.db.fetchone() is not None
+
+    def complete_team_request(self, uid, tid, token, email, password):
+
+        self.db.execute("""
+                SELECT tid FROM team_requests
+                WHERE uid = %s AND tid = %s AND token = %s
+            """,
+            (uid, tid, token))
+
+        if self.db.fetchone() is None:
+            return {'error': 'Invalid or expired request', 'status': 401}
 
         pass_hash = hashlib.sha1(password.encode('utf-8')).hexdigest()
 
@@ -890,7 +997,7 @@ class DB:
         user = self.db.fetchone()
 
         if user is None:
-            return {'error': 'Invalid email or password'}
+            return {'error': 'Invalid email or password', 'status': 401}
 
         (admin, admin_uid) = user
 
@@ -902,7 +1009,8 @@ class DB:
         res = self.db.fetchone()
 
         if res is None and not admin or (res is not None and not (res[0] or admin)):
-            return {'error': 'You are not an admin for this team'}
+            return {'error': 'You are not an admin for this team',
+                    'status': 403}
 
         self.db.execute("""
                 SELECT uid FROM team_members WHERE uid = %s AND tid = %s
@@ -910,10 +1018,15 @@ class DB:
             (uid, tid))
 
         if not self.db.fetchone() is None:
-            return {'error': 'User already is in this team'}
+            return {'error': 'User already is in this team', 'status': 409}
 
         self.db.execute("""
                 INSERT INTO team_members (uid, tid) VALUES (%s, %s)
+            """,
+            (uid, tid))
+
+        self.db.execute("""
+                DELETE FROM team_requests WHERE uid = %s AND tid = %s
             """,
             (uid, tid))
 
