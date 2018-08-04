@@ -18,13 +18,7 @@ async def get_courses(request):
     if 'uid' not in args or 'token' not in args:
         return json_response({'error': 'Bad request'}, status=400)
 
-    uid = None
-    try:
-        uid = int(args['uid'][0])
-    except:
-        return json_response({'error': 'Bad request'}, status=400)
-
-    res = db.get_courses(uid, args['token'][0])
+    res = db.get_courses(args['uid'][0], args['token'][0])
 
     if 'error' in res:
         return json_response({'error': res['error']}, status=res['status'])
@@ -166,8 +160,9 @@ async def prepare_course_request(request):
     if 'error' in res:
         return json_response({'error': res['error']}, status=res['status'])
 
+    link = '0.0.0.0:8080{}}/request?uid={}&cid={}'.format(baseURI, uid, cid)
     mailer.send_message(res['user'][0], res['user'][1], body['message'],
-                        res['admins'], 'Bible Course')
+                        res['admins'], 'Bible Course', link)
 
     return json_response({}, status=200)
 
@@ -177,22 +172,18 @@ async def display_request(request):
     args = request.args
 
     if 'uid' not in args or 'cid' not in args:
-        return html(template('response.html').render(message='Error: Bad Request', error=True))
+        return html(template('response.html').\
+            render(message='Error: Bad Request', error=True))
 
-    uid, cid = None, None
-
-    try:
-        uid, cid = int(args['uid'][0]), int(args['cid'][0])
-    except:
-        return html(template('response.html').render(message='Error: Bad Request', error=True))
-
-    user = db.get_users_info(uid)
-    course = db.get_course_info(cid)
+    user = db.get_users_info(args['uid'][0])
+    course = db.get_course_info(args['cid'][0])
 
     if user is None:
-        return html(template('response.html').render(message='Error: User does not exist', error=True))
+        return html(template('response.html').\
+            render(message='Error: User does not exist', error=True))
     if course is None:
-        return html(template('response.html').render(message='Error: Course no longer exists', error=True))
+        return html(template('response.html').\
+            render(message='Error: Course no longer exists', error=True))
 
     first, last, email = user
     leader, year, gender = course
@@ -229,22 +220,18 @@ async def complete_request(request):
 
     if 'uid' not in form or 'cid' not in form or 'email' not in form or \
         'password' not in form:
-        return redirect('{}/request/completed?msg={}'.format(baseURI, 'Error: Bad Request'))
+        return redirect('{}/request/completed?msg={}'.\
+            format(baseURI, 'Error: Bad Request'))
 
-    uid, cid = None, None
-
-    try:
-        uid, cid = int(form['uid'][0]), int(form['cid'][0])
-    except:
-        return redirect('{}/request/completed?msg={}'.format(baseURI, 'Error: Bad Request'))
-
-    res = db.complete_course_request(uid, cid, form['email'][0],
-                                     form['password'][0])
+    res = db.complete_course_request(form['uid'][0], form['tid'][0],
+                                     form['email'][0], form['password'][0])
 
     if 'error' in res:
-        return redirect('{}/request?uid={}&cid={}&error={}'.format(baseURI, uid, cid, res['error']))
+        return redirect('{}/request?uid={}&cid={}&error={}'.\
+            format(baseURI, uid, cid, res['error']))
 
-    return redirect('{}/request/completed?msg={}'.format(baseURI, 'Success! User was added to the course.'))
+    return redirect('{}/request/completed?msg={}'.\
+        format(baseURI, 'Success! User was added to the course.'))
 
 # GET - /courses/request/completed?msg={message}
 @courses.route(baseURI + '/request/completed', methods=['GET'])
@@ -252,6 +239,8 @@ async def completed(request):
     args = request.args
 
     if 'msg' not in args:
-        return html(template('response.html').render(message='Error: Bad Request', error=True))
-        
-    return html(template('response.html').render(message=args['msg'][0]))
+        return html(template('response.html').\
+            render(message='Error: Bad Request', error=True))
+
+    return html(template('response.html').\
+        render(message=args['msg'][0]))

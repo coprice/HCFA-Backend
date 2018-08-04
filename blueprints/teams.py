@@ -82,6 +82,7 @@ async def update_team(request):
         'groupme' not in body or 'members' not in body or 'admins' not in body:
         return json_response({'error': 'Bad Request'}, status=400)
 
+
     res = db.update_team(body['uid'], body['token'], body['tid'], body['name'],
                          body['description'], body['leaders'], body['meetings'],
                          body['groupme'], body['members'], body['admins'])
@@ -151,8 +152,9 @@ async def prepare_team_request(request):
     if 'error' in res:
         return json_response({'error': res['error']}, status=res['status'])
 
+    link = '0.0.0.0:8080{}/request?uid={}&tid={}'.format(baseURI, uid, tid)
     mailer.send_message(res['user'][0], res['user'][1], body['message'],
-                        res['admins'], 'Ministry Team')
+                        res['admins'], 'Ministry Team', link)
 
     return json_response(res, status=201)
 
@@ -162,22 +164,18 @@ async def display_request(request):
     args = request.args
 
     if 'uid' not in args or 'tid' not in args:
-        return html(template('response.html').render(message='Error: Bad Request', error=True))
+        return html(template('response.html').\
+            render(message='Error: Bad Request', error=True))
 
-    uid, tid = None, None
-
-    try:
-        uid, tid = int(args['uid'][0]), int(args['tid'][0])
-    except:
-        return html(template('response.html').render(message='Error: Bad Request', error=True))
-
-    user = db.get_users_info(uid)
-    team = db.get_team_info(tid)
+    user = db.get_users_info(args['uid'][0])
+    team = db.get_team_info(args['tid'][0])
 
     if user is None:
-        return html(template('response.html').render(message='Error: User does not exist', error=True))
+        return html(template('response.html').\
+            render(message='Error: User does not exist', error=True))
     if team is None:
-        return html(template('response.html').render(message='Error: Team does not exist', error=True))
+        return html(template('response.html').\
+            render(message='Error: Team does not exist', error=True))
 
     first, last, email = user
     (name,) = team
@@ -207,21 +205,18 @@ async def complete_request(request):
 
     if 'uid' not in form or 'tid' not in form or 'email' not in form or \
         'password' not in form:
-        return redirect('{}/request/completed?msg={}'.format(baseURI, 'Error: Bad Request'))
+        return redirect('{}/request/completed?msg={}'.\
+            format(baseURI, 'Error: Bad Request'))
 
-    uid, tid = None, None
-
-    try:
-        uid, tid = int(form['uid'][0]), int(form['tid'][0])
-    except:
-        return redirect('{}/request/completed?msg={}'.format(baseURI, 'Error: Bad Request'))
-
-    res = db.complete_team_request(uid, tid, form['email'][0], form['password'][0])
+    res = db.complete_team_request(form['uid'][0], form['tid'][0],
+                                   form['email'][0], form['password'][0])
 
     if 'error' in res:
-        return redirect('{}/request?uid={}&tid={}&error={}'.format(baseURI, uid, tid, res['error']))
+        return redirect('{}/request?uid={}&tid={}&error={}'.\
+            format(baseURI, uid, tid, res['error']))
 
-    return redirect('{}/request/completed?msg={}'.format(baseURI, 'Success! User was added to the team.'))
+    return redirect('{}/request/completed?msg={}'.\
+        format(baseURI, 'Success! User was added to the team.'))
 
 # GET - /teams/request/completed?msg={message}
 @teams.route(baseURI + '/request/completed', methods=['GET'])
@@ -229,6 +224,7 @@ async def completed(request):
     args = request.args
 
     if 'msg' not in args:
-        return html(template('response.html').render(message='Error: Bad Request', error=True))
-        
+        return html(template('response.html').\
+            render(message='Error: Bad Request', error=True))
+
     return html(template('response.html').render(message=args['msg'][0]))
