@@ -90,7 +90,7 @@ async def update_team(request):
     if 'error' in res:
         return json_response({'error': res['error']}, status=res['status'])
 
-    return json_response(res, status=200)
+    return json_response({}, status=200)
 
 # POST = /teams/delete
 # {
@@ -110,7 +110,7 @@ async def delete_team(request):
     if 'error' in res:
         return json_response({'error': res['error']}, status=res['status'])
 
-    return json_response(res, status=200)
+    return json_response({}, status=200)
 
 # POST - /teams/leave
 # {
@@ -130,7 +130,7 @@ async def leave_team(request):
     if 'error' in res:
         return json_response({'error': res['error']}, status=res['status'])
 
-    return json_response(res, status=200)
+    return json_response({}, status=200)
 
 # POST - /teams/request/send
 # {
@@ -148,14 +148,14 @@ async def send_team_request(request):
         return json_response({'error': 'Bad request'}, status=400)
 
     uid, tid = body['uid'], body['tid']
-    res = db.send_team_request(uid, body['token'], tid)
+    res = db.prepare_team_request(uid, body['token'], tid)
 
     if 'error' in res:
         return json_response({'error': res['error']}, status=res['status'])
 
     link = '{}?uid={}&tid={}&token={}'.\
         format(request.url.replace('/send', ''), uid, tid, res['token'])
-    mailer.send_message(res['user'][0], res['user'][1], body['message'],
+    mailer.send_request(res['user'][0], res['user'][1], body['message'],
                         'Ministry Team', link, res['admins'])
 
     return json_response({}, status=201)

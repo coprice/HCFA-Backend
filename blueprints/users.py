@@ -1,6 +1,8 @@
-from sanic.response import json as json_response
+from sanic.response import json as json_response, html, redirect
 from sanic import Blueprint
 
+from mailer.mailer import mailer
+from template_loader.template_loader import template
 from db.db import db
 
 
@@ -72,7 +74,7 @@ async def validate_session(request):
     if 'error' in res:
         return json_response({'error': res['error']}, status=res['status'])
 
-    return json_response(res, status=200)
+    return json_response({}, status=200)
 
 # POST - /users/leader/add
 # {
@@ -92,7 +94,7 @@ async def add_leader(request):
     if 'error' in res:
         return json_response({'error': res['error']}, status=res['status'])
 
-    return json_response(res, status=201)
+    return json_response({}, status=201)
 
 # POST - /users/leader/remove
 # {
@@ -113,7 +115,7 @@ async def add_leader(request):
     if 'error' in res:
         return json_response({'error': res['error']}, status=res['status'])
 
-    return json_response(res, status=201)
+    return json_response({}, status=201)
 
 # POST - /users/admin/add
 # {
@@ -133,7 +135,7 @@ async def add_admin(request):
     if 'error' in res:
         return json_response({'error': res['error']}, status=res['status'])
 
-    return json_response(res, status=201)
+    return json_response({}, status=201)
 
 # POST - /users/admin/remove
 # {
@@ -153,7 +155,7 @@ async def remove_admin(request):
     if 'error' in res:
         return json_response({'error': res['error']}, status=res['status'])
 
-    return json_response(res, status=201)
+    return json_response({}, status=201)
 
 # POST - /users/update/password
 # {
@@ -176,7 +178,7 @@ async def change_password(request):
     if 'error' in res:
         return json_response({'error': res['error']}, status=res['status'])
 
-    return json_response(res, status=201)
+    return json_response({}, status=201)
 
 # POST - users/update/contact
 # {
@@ -200,7 +202,7 @@ async def update_contact(request):
     if 'error' in res:
         return json_response({'error': res['error']}, status=res['status'])
 
-    return json_response(res, status=201)
+    return json_response({}, status=201)
 
 # POST - users/update/image
 # {
@@ -219,4 +221,82 @@ async def update_image(request):
     if 'error' in res:
         return json_response({'error': res['error']}, status=res['status'])
 
-    return json_response(res, status=201)
+    return json_response({}, status=201)
+
+# POST - users/reset/send
+# {
+#     email: String
+# }
+@users.route(baseURI + '/reset/send', methods=['POST'])
+async def send_reset(request):
+    body = request.json
+
+    if 'email' not in body:
+        return json_response({ 'error': 'Bad request' }, status=400)
+
+    email = body['email']
+    res = db.check_email(email)
+
+    if 'error' in res:
+        return json_response({'error': res['error']}, status=res['status'])
+
+    link = '{}?uid={}&token={}'.\
+        format(request.url.replace('/send', ''), res['uid'], res['token'])
+    mailer.send_reset(email, link)
+
+    return json_response({}, status=201)
+
+# GET - users/reset?uid={uid}&token={token}
+@users.route(baseURI + '/reset', methods=['GET'])
+async def display_reset(request):
+    args = request.args
+
+    if 'uid' not in args or 'token' not in args:
+        return html(template('response.html').\
+            render(message='Error: Bad Request', error=True))
+
+    uid, token = args['uid'][0], args['token'][0]
+
+    if not db.validate_password_request(uid, token):
+        return html(template('response.html').\
+            render(message='Error: Invalid or expired request', error=True))
+
+    action = '{}/reset/complete'.format(baseURI)
+    return html(template('request.html').\
+        render(action=action, uid=uid, token=token))
+
+# POST - users/reset/complete
+# {
+#     uid: Int,
+#     password: String,
+#     confirm: String,
+#     token: String
+# }
+@users.route(baseURI + '/reset/complete', methods=['POST'])
+async def complete_reset(request):
+    form = request.form
+
+    if 'uid' not in form or 'password' not in form or 'confirm' not in form or \
+        'token' not in form:
+        return redirect('{}/reset/completed?msg={}'.\
+            format(baseURI, 'Error: Bad Request'))
+
+    uid, token = form['uid'][0], form['token'][0]
+
+    res = db.complete_password_reset(uid, token, form['password'][0])
+
+    return redirect('{}/request/completed?msg={}'.\
+        format(baseURI, 'Success! User was added to the course.'))
+
+# GET - /users/reset/completed?msg={message}
+@courses.route(baseURI + '/request/completed', methods=['GET'])
+async def completed(request):
+    args = request.args
+
+    if 'msg' not in args:
+        return html(template('response.html').\
+            render(message='Error: Bad Request', error=True))
+
+    message = args['msg'][0]
+    return html(template('response.html').\
+        render(message=args['msg'][0], error=message.startswith('Error')))

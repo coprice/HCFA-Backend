@@ -98,7 +98,7 @@ async def update_course(request):
     if 'error' in res:
         return json_response({'error': res['error']}, status=res['status'])
 
-    return json_response(res, status=201)
+    return json_response({}, status=201)
 
 # POST - /courses/delete
 # {
@@ -118,7 +118,7 @@ async def delete_course(request):
     if 'error' in res:
         return json_response({'error': res['error']}, status=res['status'])
 
-    return json_response(res, status=200)
+    return json_response({}, status=200)
 
 # POST - /courses/leave
 # {
@@ -138,7 +138,7 @@ async def leave_course(request):
     if 'error' in res:
         return json_response({'error': res['error']}, status=res['status'])
 
-    return json_response(res, status=200)
+    return json_response({}, status=200)
 
 # POST - /courses/request/send
 # {
@@ -156,14 +156,14 @@ async def send_course_request(request):
         return json_response({'error': 'Bad request'}, status=400)
 
     uid, cid = body['uid'], body['cid']
-    res = db.send_course_request(uid, body['token'], cid)
+    res = db.prepare_course_request(uid, body['token'], cid)
 
     if 'error' in res:
         return json_response({'error': res['error']}, status=res['status'])
 
     link = '{}?uid={}&cid={}&token={}'.\
         format(request.url.replace('/send', ''), uid, cid, res['token'])
-    mailer.send_message(res['user'][0], res['user'][1], body['message'],
+    mailer.send_request(res['user'][0], res['user'][1], body['message'],
                         'Bible Course', link, res['admins'])
 
     return json_response({}, status=200)
@@ -219,7 +219,8 @@ async def display_request(request):
 #     uid: Int,
 #     cid: Int,
 #     email: String,
-#     password: String
+#     password: String,
+#     token: String
 # }
 @courses.route(baseURI + '/request/complete', methods=['POST'])
 async def complete_request(request):
@@ -251,5 +252,6 @@ async def completed(request):
         return html(template('response.html').\
             render(message='Error: Bad Request', error=True))
 
+    message = args['msg'][0]
     return html(template('response.html').\
-        render(message=args['msg'][0]))
+        render(message=message, error=message.startswith('Error')))

@@ -10,8 +10,7 @@ baseURI = '/events'
 # GET = /events
 @events.route(baseURI, methods=['GET'])
 async def get_events(request):
-    res = db.get_events()
-    return json_response(res, status=200)
+    return json_response(db.get_events(), status=200)
 
 # POST = /events/create
 # {
@@ -71,7 +70,7 @@ async def update_event(request):
     if 'error' in res:
         return json_response({'error': res['error']}, status=res['status'])
 
-    return json_response(res, status=201)
+    return json_response({}, status=201)
 
 # POST = /events/delete
 # {
@@ -91,4 +90,4 @@ async def delete_events(request):
     if 'error' in res:
         return json_response({'error': res['error']}, status=res['status'])
 
-    return json_response(res, status=200)
+    return json_response({}, status=200)

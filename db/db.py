@@ -94,7 +94,7 @@ class DB:
         if self.db.fetchone() is None:
             return {'error': 'Session Expired', 'status': 403}
 
-        return {'validated': True}
+        return {}
 
     def change_permission(self, uid, token, email, perm='leader', is_add=True):
 
@@ -186,7 +186,7 @@ class DB:
                 """,
                 (email,))
 
-            if not self.db.fetchone() is None:
+            if self.db.fetchone() is not None:
                 return {'error': 'Account already exists with given email',
                         'status': 409}
 
@@ -212,6 +212,50 @@ class DB:
                 UPDATE users SET profile = %s WHERE uid = %s
             """,
             (image, uid))
+
+        return {}
+
+    def prepare_password_request(self, email):
+
+        self.db.execute("""
+                SELECT uid FROM users WHERE email = %s
+            """,
+            (email,))
+
+        if self.db.fetchone() is None:
+            return {'error': 'No user with that email', 'status': 409}
+
+        uid = res[0]
+
+        self.db.execute("""
+                INSERT INTO password_requests (uid, token) VALUES (%s, %s)
+            """,
+            (uid, token))
+
+        return {'uid': uid, 'token': token}
+
+    def validate_password_request(self, uid, token):
+
+        self.db.execute("""
+                SELECT uid FROM password_requests WHERE uid = %s AND token = %s
+            """,
+            (uid, token))
+
+        return self.db.fetchone() is not None
+
+    def complete_password_request(self, uid, token, password):
+
+        pass_hash = hashlib.sha1(password.encode('utf-8')).hexdigest()
+
+        self.db.execute("""
+                UPDATE users SET pass = %s WHERE uid = %s
+            """,
+            (pass_hash, uid))
+
+        self.db.execute("""
+                DELETE FROM password_requests WHERE uid = %s
+            """,
+            (uid,))
 
         return {}
 
@@ -551,7 +595,7 @@ class DB:
 
         return {}
 
-    def send_course_request(self, uid, token, cid):
+    def prepare_course_request(self, uid, token, cid):
 
         self.db.execute("""
                 SELECT first_name, last_name, email FROM users
@@ -576,7 +620,7 @@ class DB:
             """,
             (uid, cid))
 
-        if not self.db.fetchone() is None:
+        if self.db.fetchone() is not None:
             return {'error': 'User already in this course', 'status': 403}
 
         token = secrets.token_hex()
@@ -665,7 +709,7 @@ class DB:
             """,
             (uid, cid))
 
-        if not self.db.fetchone() is None:
+        if self.db.fetchone() is not None:
             return {'error': 'User already is in this course', 'status': 409}
 
         self.db.execute("""
@@ -905,7 +949,7 @@ class DB:
 
         return {}
 
-    def send_team_request(self, uid, token, tid):
+    def prepare_team_request(self, uid, token, tid):
 
         self.db.execute("""
                 SELECT first_name, last_name, email FROM users WHERE uid = %s AND token = %s
@@ -929,7 +973,7 @@ class DB:
             """,
             (uid, tid))
 
-        if not self.db.fetchone() is None:
+        if self.db.fetchone() is not None:
             return {'error': 'User already in this team', 'status': 403}
 
         token = secrets.token_hex()
@@ -1017,7 +1061,7 @@ class DB:
             """,
             (uid, tid))
 
-        if not self.db.fetchone() is None:
+        if self.db.fetchone() is not None:
             return {'error': 'User already is in this team', 'status': 409}
 
         self.db.execute("""
@@ -1031,6 +1075,9 @@ class DB:
             (uid, tid))
 
         return {}
+
+
+    # For requests
 
     def get_users_info(self, uid):
 
@@ -1059,7 +1106,6 @@ class DB:
             (tid,))
 
         return self.db.fetchone()
-
 
 
     ### HELPERS ###
