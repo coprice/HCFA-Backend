@@ -69,12 +69,10 @@ async def validate_session(request):
     except:
         return json_response({'error': 'Bad request'}, status=400)
 
-    res = db.validate_session(uid, args['token'][0])
-
-    if 'error' in res:
-        return json_response({'error': res['error']}, status=res['status'])
-
-    return json_response({}, status=200)
+    if db.validate_session(uid, args['token'][0]):
+        return json_response({}, status=200)
+    else:
+        return json_response({'error': 'Session Expired'}, status=403)
 
 # POST - /users/leader/add
 # {

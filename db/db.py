@@ -91,10 +91,7 @@ class DB:
             """,
             (uid, token))
 
-        if self.db.fetchone() is None:
-            return {'error': 'Session Expired', 'status': 403}
-
-        return {}
+        return self.db.fetchone() is not None:
 
     def change_permission(self, uid, token, email, perm='leader', is_add=True):
 
@@ -223,14 +220,25 @@ class DB:
             (email,))
 
         if self.db.fetchone() is None:
-            return {'error': 'No user with that email', 'status': 409}
+            return {'error': 'User not found', 'status': 409}
 
-        uid = res[0]
+        uid, token = res[0], secrets.token_hex()
 
         self.db.execute("""
-                INSERT INTO password_requests (uid, token) VALUES (%s, %s)
+                SELECT uid FROM password_requests WHERE uid = %s
             """,
-            (uid, token))
+            (uid,))
+
+        if self.db.fetchone() is None:
+            self.db.execute("""
+                    INSERT INTO password_requests (uid, token) VALUES (%s, %s)
+                """,
+                (uid, token))
+        else:
+            self.db.execute("""
+                    UPDATE password_requests SET token = %s WHERE uid = %s
+                """,
+                (token, uid))
 
         return {'uid': uid, 'token': token}
 
