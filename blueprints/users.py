@@ -287,7 +287,7 @@ async def complete_reset(request):
         format(baseURI, 'Success! User was added to the course.'))
 
 # GET - /users/reset/completed?msg={message}
-@courses.route(baseURI + '/request/completed', methods=['GET'])
+@users.route(baseURI + '/request/completed', methods=['GET'])
 async def completed(request):
     args = request.args
 

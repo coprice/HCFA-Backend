@@ -91,7 +91,7 @@ class DB:
             """,
             (uid, token))
 
-        return self.db.fetchone() is not None:
+        return self.db.fetchone() is not None
 
     def change_permission(self, uid, token, email, perm='leader', is_add=True):
 
