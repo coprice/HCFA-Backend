@@ -654,16 +654,15 @@ class DB:
                 (token, uid, cid))
 
         self.db.execute("""
-                SELECT first_name, last_name, email FROM
-                course_members JOIN users
-                ON course_members.uid = users.uid AND cid = %s AND is_admin = TRUE
+                SELECT email FROM
+                course_members x JOIN users y
+                ON x.uid = y.uid AND cid = %s AND is_admin = TRUE
             """,
             (cid,))
 
         return {
             'user': ('{} {}'.format(user[0], user[1]), user[2]),
-            'admins': map(lambda adm: ('{} {}'.format(adm[0], adm[1]), adm[2]),
-                          self.db.fetchall()),
+            'admins': map(lambda adm: adm[0], self.db.fetchall()),
             'token': token
         }
 
@@ -1007,16 +1006,15 @@ class DB:
                 (token, uid, tid))
 
         self.db.execute("""
-                SELECT first_name, last_name, email FROM
-                team_members JOIN users ON team_members.uid = users.uid
-                    AND tid = %s AND is_admin = TRUE
+                SELECT email FROM
+                team_members x JOIN users y
+                ON x.uid = y.uid AND tid = %s AND is_admin = TRUE
             """,
             (tid,))
 
         return {
             'user': ('{} {}'.format(user[0], user[1]), user[2]),
-            'admins': map(lambda x: ('{} {}'.format(x[0], x[1]), x[2]),
-                          self.db.fetchall()),
+            'admins': map(lambda adm: adm[0], self.db.fetchall()),
             'token': token
         }
 
