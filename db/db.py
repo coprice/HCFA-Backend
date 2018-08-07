@@ -219,10 +219,12 @@ class DB:
             """,
             (email,))
 
-        if self.db.fetchone() is None:
+        user = self.db.fetchone()
+
+        if user is None:
             return {'error': 'User not found', 'status': 409}
 
-        uid, token = res[0], secrets.token_hex()
+        uid, token = user[0], secrets.token_hex()
 
         self.db.execute("""
                 SELECT uid FROM password_requests WHERE uid = %s

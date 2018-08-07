@@ -55,5 +55,5 @@ CREATE TABLE course_requests(uid INTEGER NOT NULL,
                              tid INTEGER NOT NULL,
                              token VARCHAR NOT NULL)
 
-CREATE TABLE reset_requests(uid INTEGER NOT NULL,
-                            token VARCHAR NOT NULL)
+CREATE TABLE password_requests(uid INTEGER NOT NULL,
+                               token VARCHAR NOT NULL)

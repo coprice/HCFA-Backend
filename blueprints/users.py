@@ -233,7 +233,7 @@ async def send_reset(request):
         return json_response({ 'error': 'Bad request' }, status=400)
 
     email = body['email']
-    res = db.check_email(email)
+    res = db.prepare_password_request(email)
 
     if 'error' in res:
         return json_response({'error': res['error']}, status=res['status'])
@@ -254,14 +254,18 @@ async def display_reset(request):
             render(message='Error: Bad Request', error=True))
 
     uid, token = args['uid'][0], args['token'][0]
+    res = db.get_users_info(uid)
 
-    if not db.validate_password_request(uid, token):
+    if not db.validate_password_request(uid, token) or res is None:
         return html(template('response.html').\
             render(message='Error: Invalid or expired request', error=True))
 
+    first, last, email = res
+
+    title = 'Reset password for {} ({} {})'.format(email, first, last)
     action = '{}/reset/complete'.format(baseURI)
-    return html(template('request.html').\
-        render(action=action, uid=uid, token=token))
+    return html(template('reset.html').\
+        render(title=title, action=action, uid=uid, token=token))
 
 # POST - users/reset/complete
 # {
@@ -281,10 +285,10 @@ async def complete_reset(request):
 
     uid, token = form['uid'][0], form['token'][0]
 
-    res = db.complete_password_reset(uid, token, form['password'][0])
+    res = db.complete_password_request(uid, token, form['password'][0])
 
     return redirect('{}/request/completed?msg={}'.\
-        format(baseURI, 'Success! User was added to the course.'))
+        format(baseURI, 'Your password has been updated'))
 
 # GET - /users/reset/completed?msg={message}
 @users.route(baseURI + '/request/completed', methods=['GET'])

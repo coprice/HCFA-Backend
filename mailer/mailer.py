@@ -5,7 +5,6 @@ class Mailer:
         pass
 
     def send_request(self, name, email, message, request_type, link, admins):
-
         text =\
             "Name: {}\nEmail: {}\nMessage: {}\n\nAdd user to this {} here: {}".\
             format(name, email, message, request_type.lower(), link)
