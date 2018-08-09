@@ -1,4 +1,5 @@
 aiofiles==0.3.2
+apns==2.0.1
 certifi==2018.4.16
 chardet==3.0.4
 httptools==0.0.11
