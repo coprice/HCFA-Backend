@@ -47,13 +47,13 @@ CREATE TABLE team_members(uid INTEGER NOT NULL,
                           tid INTEGER NOT NULL,
                           is_admin BOOLEAN DEFAULT FALSE)
 
-CREATE TABLE team_requests(uid INTEGER NOT NULL,
-                           cid INTEGER NOT NULL,
-                           token VARCHAR NOT NULL)
-
 CREATE TABLE course_requests(uid INTEGER NOT NULL,
-                             tid INTEGER NOT NULL,
+                             cid INTEGER NOT NULL,
                              token VARCHAR NOT NULL)
+
+CREATE TABLE team_requests(uid INTEGER NOT NULL,
+                           tid INTEGER NOT NULL,
+                           token VARCHAR NOT NULL)
 
 CREATE TABLE password_requests(uid INTEGER NOT NULL,
                                token VARCHAR NOT NULL)

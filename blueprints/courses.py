@@ -163,8 +163,20 @@ async def send_course_request(request):
 
     link = '{}?uid={}&cid={}&token={}'.\
         format(request.url.replace('/send', ''), uid, cid, res['token'])
+
+    course = db.get_course_info(cid)
+    if course is None:
+        return json_response({'error': 'Course not found'}, status=404)
+
+    leader, year, gender = course
+    if leader.endswith('s'):
+        leader += "'"
+    else:
+        leader += "'s"
+    title = '{} {} {}'.format(leader, year, gender)
+
     mailer.send_request(res['user'][0], res['user'][1], body['message'],
-                        'Bible Course', link, res['admins'])
+                        'Bible Course', link, res['admins'], title)
 
     return json_response({}, status=200)
 

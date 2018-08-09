@@ -662,7 +662,7 @@ class DB:
 
         return {
             'user': ('{} {}'.format(user[0], user[1]), user[2]),
-            'admins': map(lambda adm: adm[0], self.db.fetchall()),
+            'admins': list(map(lambda adm: adm[0], self.db.fetchall())),
             'token': token
         }
 
@@ -1014,7 +1014,7 @@ class DB:
 
         return {
             'user': ('{} {}'.format(user[0], user[1]), user[2]),
-            'admins': map(lambda adm: adm[0], self.db.fetchall()),
+            'admins': list(map(lambda adm: adm[0], self.db.fetchall())),
             'token': token
         }
 
