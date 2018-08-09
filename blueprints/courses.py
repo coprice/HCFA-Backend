@@ -166,7 +166,7 @@ async def send_course_request(request):
 
     course = db.get_course_info(cid)
     if course is None:
-        return json_response({'error': 'Course not found'}, status=404)
+        return json_response({'error': 'Bible course not found'}, status=404)
 
     leader, year, gender = course
     if leader.endswith('s'):

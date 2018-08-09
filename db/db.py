@@ -222,7 +222,7 @@ class DB:
         user = self.db.fetchone()
 
         if user is None:
-            return {'error': 'User not found', 'status': 409}
+            return {'error': 'User not found', 'status': 404}
 
         uid, token = user[0], secrets.token_hex()
 

@@ -158,7 +158,7 @@ async def send_team_request(request):
 
     team = db.get_team_info(tid)
     if team is None:
-        return json_response({'error': 'Course not found'}, status=404)
+        return json_response({'error': 'Ministry team not found'}, status=404)
     (name,) = team
 
     mailer.send_request(res['user'][0], res['user'][1], body['message'],
