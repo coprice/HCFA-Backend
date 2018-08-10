@@ -23,7 +23,8 @@ class Pusher(object):
     def send_notification(self, token, message):
         self.reset_if_necessary()
 
-        payload = Payload(alert=message, sound='default', badge=1)
+        payload = Payload(alert=message, sound='default',
+                          badge=1, mutable_content=True)
         apns.gateway_server.send_notification(token, payload)
 
     def send_event_notifications(self, event):
@@ -31,7 +32,7 @@ class Pusher(object):
 
         payload = Payload(alert="A new event has been added! Check it out: {}".
                           format(event),
-                          sound="default", badge=1)
+                          sound="default", badge=1, mutable_content=True)
         frame = Frame()
         identifier = 1
         expiry = time() + 3600
