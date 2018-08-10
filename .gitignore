@@ -4,3 +4,4 @@ venv
 static/semantic/
 pems
 apns
+config
