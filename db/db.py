@@ -212,6 +212,23 @@ class DB:
 
         return {}
 
+    def update_apn_token(self, uid, token, apn_token):
+
+        self.db.execute("""
+                SELECT uid FROM users WHERE uid = %s AND token = %s
+            """,
+            (uid, token))
+
+        if self.db.fetchone() is None:
+            return {'error': 'Session Expired', 'status': 403}
+
+        self.db.execute("""
+                UPDATE users SET apn_token = %s WHERE uid = %s
+            """,
+            (apn_token, uid))
+
+        return {}
+
     def prepare_password_request(self, email):
 
         self.db.execute("""
@@ -1090,7 +1107,7 @@ class DB:
     def get_users_info(self, uid):
 
         self.db.execute("""
-                SELECT first_name, last_name, email FROM users WHERE uid = %s
+                SELECT first_name, last_name, email, apn_token FROM users WHERE uid = %s
             """,
             (uid,))
 

@@ -6,7 +6,8 @@ CREATE TABLE users(uid SERIAL PRIMARY KEY,
                    admin BOOLEAN DEFAULT FALSE,
                    leader BOOLEAN DEFAULT FALSE,
                    token VARCHAR,
-                   profile VARCHAR)
+                   profile VARCHAR,
+                   apn_token VARCHAR)
 
 CREATE TABLE events(eid SERIAL PRIMARY KEY,
                     title VARCHAR NOT NULL,

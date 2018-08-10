@@ -2,6 +2,7 @@ from sanic.response import json as json_response, html, redirect
 from sanic import Blueprint
 
 from mailer.mailer import mailer
+from pusher.pusher import pusher
 from template_loader.template_loader import template
 from db.db import db
 
@@ -208,7 +209,7 @@ async def display_request(request):
         return html(template('response.html').\
             render(message='Error: Course no longer exists', error=True))
 
-    first, last, email = user
+    first, last, email, _ = user
     leader, year, gender = course
 
     if leader.endswith('s'):
@@ -250,10 +251,32 @@ async def complete_request(request):
 
     res = db.complete_course_request(uid, cid, token, form['email'][0],
                                      form['password'][0])
+    course = db.get_course_info(cid)
+    user = db.get_users_info(uid)
 
+    error = None
     if 'error' in res:
+        error = res['error']
+    elif course is None:
+        error = 'Bible course no longer exists'
+    elif user is None:
+        error = 'User does not exist'
+
+    if error:
         return redirect('{}/request?uid={}&cid={}&token={}&error={}'.\
-            format(baseURI, uid, cid, token, res['error']))
+            format(baseURI, uid, cid, token, error))
+
+    _, _, _, apn_token = user
+
+    if apn_token:
+        leader, year, gender = course
+        if leader.endswith('s'):
+            leader += "'"
+        else:
+            leader += "'s"
+
+        message = 'You\'ve been added to {} {} {}!'.format(leader, year, gender)
+        pusher.send_notification(apn_token, message)
 
     return redirect('{}/request/completed?msg={}'.\
         format(baseURI, 'Success! User was added to the course.'))

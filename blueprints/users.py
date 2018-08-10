@@ -212,10 +212,29 @@ async def update_contact(request):
 async def update_image(request):
     body = request.json
 
-    if 'uid' not in body or 'token' not in  body or 'image' not in body:
+    if 'uid' not in body or 'token' not in body or 'image' not in body:
         return json_response({ 'error': 'Bad request' }, status=400)
 
     res = db.update_image(body['uid'], body['token'], body['image'])
+
+    if 'error' in res:
+        return json_response({'error': res['error']}, status=res['status'])
+
+    return json_response({}, status=201)
+
+# POST - users/update/apn
+# {
+#     uid: int,
+#     token: string
+# }
+@users.route(baseURI + '/update/apn', methods=['POST'])
+async def update_apn_token(request):
+    body = request.json
+
+    if 'uid' not in body or 'token' not in body or 'apn_token' not in body:
+        return json_response({'error': 'Bad request'}, status=400)
+
+    res = db.update_apn_token(body['uid'], body['token'], body['apn_token'])
 
     if 'error' in res:
         return json_response({'error': res['error']}, status=res['status'])

@@ -2,6 +2,7 @@ from sanic.response import json as json_response, html, redirect
 from sanic import Blueprint
 
 from mailer.mailer import mailer
+from pusher.pusher import pusher
 from template_loader.template_loader import template
 from db.db import db
 
@@ -195,7 +196,7 @@ async def display_request(request):
             render(message='Error: Team does not exist (or no longer exists)',
                    error=True))
 
-    first, last, email = user
+    first, last, email, _ = user
     (name,) = team
 
     message = 'Sign in to add {} ({} {}) to {}'.format(email, first, last, name)
@@ -230,10 +231,26 @@ async def complete_request(request):
 
     res = db.complete_team_request(uid, tid, token, form['email'][0],
                                    form['password'][0])
+    team = db.get_team_info(tid)
+    user = db.get_users_info()
 
+    error = None
     if 'error' in res:
+        error = res['error']
+    elif team is None:
+        error = 'Ministry team no longer exists'
+    elif user is None:
+        error = 'User does not exist'
+
+    if error:
         return redirect('{}/request?uid={}&tid={}&token={}&error={}'.\
-            format(baseURI, uid, tid, token, res['error']))
+            format(baseURI, uid, tid, token, error))
+
+    _, _, _, apn_token = user
+
+    if apn_token:
+        message = 'You\'ve been added to {}!'.format(team[0])
+        pusher.send_notification(apn_token, message)
 
     return redirect('{}/request/completed?msg={}'.\
         format(baseURI, 'Success! User was added to the team.'))
