@@ -16,13 +16,22 @@ class Mailer:
         text = "From: {}\r\nTo: {}\r\nSubject: [NO REPLY] {}\r\n\r\n{}".\
             format(self.user, ', '.join(admins), subject, msg)
 
-        self.server.sendmail(self.user, admins, text)
+        try:
+            self.server.sendmail(self.user, admins, text)
+            return True
+        except:
+            return False
 
     def send_reset(self, email, link):
 
         msg = "Reset your password here: {}".format(link)
         text = "From: {}\r\nTo: {}\r\nSubject: [NO REPLY] Password Reset\r\n\r\n{}".\
             format(self.user, email, msg)
-        self.server.sendmail(self.user, email, text)
+
+        try:
+            self.server.sendmail(self.user, email, text)
+            return True
+        except:
+            return False
 
 mailer = Mailer()

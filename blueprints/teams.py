@@ -161,8 +161,11 @@ async def send_team_request(request):
         return json_response({'error': 'Ministry team not found'}, status=404)
     (name,) = team
 
-    mailer.send_request(res['user'][0], res['user'][1], body['message'],
-                        'Ministry Team', link, res['admins'], name)
+    sent = mailer.send_request(res['user'][0], res['user'][1], body['message'],
+                               'Ministry Team', link, res['admins'], name)
+
+    if not sent:
+        json_response({'error': 'Unable to send email'}, status=500)
 
     return json_response({}, status=201)
 

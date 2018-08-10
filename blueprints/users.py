@@ -1,5 +1,6 @@
 from sanic.response import json as json_response, html, redirect
 from sanic import Blueprint
+import asyncio
 
 from mailer.mailer import mailer
 from template_loader.template_loader import template
@@ -240,7 +241,11 @@ async def send_reset(request):
 
     link = '{}?uid={}&token={}'.\
         format(request.url.replace('/send', ''), res['uid'], res['token'])
-    mailer.send_reset(email, link)
+
+    sent = mailer.send_reset(email, link)
+
+    if not sent:
+        return json_response({'error': 'Unable to send email'}, status=500)
 
     return json_response({}, status=201)
 

@@ -2,6 +2,7 @@ from sanic.response import json as json_response
 from sanic import Blueprint
 
 from db.db import db
+from pusher.pusher import pusher
 
 
 events = Blueprint('events')
@@ -32,12 +33,15 @@ async def create_event(request):
         or 'description' not in body or 'image' not in body:
         return json_response({'error': 'Bad request'}, status=400)
 
-    res = db.create_event(body['uid'], body['token'], body['title'], \
+    title = body['title']
+    res = db.create_event(body['uid'], body['token'], title, \
                           body['location'], body['start'], \
                           body['end'], body['description'], body['image'])
 
     if 'error' in res:
         return json_response({'error': res['error']}, status=res['status'])
+
+    pusher.send_event_notifications(title)
 
     return json_response(res, status=201)
 

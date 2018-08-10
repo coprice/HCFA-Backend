@@ -175,8 +175,11 @@ async def send_course_request(request):
         leader += "'s"
     title = '{} {} {}'.format(leader, year, gender)
 
-    mailer.send_request(res['user'][0], res['user'][1], body['message'],
-                        'Bible Course', link, res['admins'], title)
+    sent = mailer.send_request(res['user'][0], res['user'][1], body['message'],
+                               'Bible Course', link, res['admins'], title)
+
+    if not sent:
+        json_response({'error': 'Unable to send email'}, status=500)
 
     return json_response({}, status=200)
 
