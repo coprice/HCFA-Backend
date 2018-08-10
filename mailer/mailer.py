@@ -1,11 +1,13 @@
 import smtplib
 
+from config.config import config
+
+
 class Mailer:
     def __init__(self):
-        self.user = 'hcfa.app@gmail.com'
-        self.password = '#Doxo1ogy'
+        self.user = config.mailer_email
         self.server = smtplib.SMTP_SSL('smtp.gmail.com')
-        self.server.login(self.user, self.password)
+        self.server.login(self.user, config.mailer_password)
 
     def send_request(self, name, email, message, request_type, link, admins, title):
 

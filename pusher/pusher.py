@@ -1,31 +1,26 @@
 from time import time
 from apns.apns import APNs, Frame, Payload
+from config.config import config
 
 class Pusher(object):
 
     def __init__(self):
         print('Opening connection to APNS...')
-        self.apns = APNs(use_sandbox=True,
-                         cert_file='pems/aps_dev_cert.pem',
-                         key_file='pems/aps_dev_key_decrypted.pem')
-        self.stamp = time()
+        self.cert = config.cert_file
+        self.key = config.key_file
+        self.reset_connection()
 
+    def reset_connection(self):
+        self.apns = APNs(use_sandbox=True, cert_file=self.cert,
+                         key_file=self.key)
+        self.stamp = time()
         self.failed = set()
         for token, _ in self.apns.feedback_server.items():
-            print('failed token: {}'.format(token))
             self.failed.add(token)
 
     def reset_if_necessary(self):
         if time() - self.stamp > 86400:
-
-            self.apns = APNs(use_sandbox=True,
-                             cert_file='pems/aps_dev_cert.pem',
-                             key_file='pems/aps_dev_key_decrypted.pem')
-            self.stamp = time()
-            self.failed = set()
-
-            for token, _ in self.apns.feedback_server.items():
-                self.failed.add(token)
+            self.reset_connection()
 
     def send_notification(self, token, message):
         self.reset_if_necessary()

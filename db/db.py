@@ -1,14 +1,13 @@
 import psycopg2 as psg
 import hashlib, secrets
 
-from config.config import Config
+from config.config import config
 
 
 class DB:
     def __init__(self):
-        self.config = Config()
         connect_str = "dbname='%s' user='%s' host='%s' password='%s'" % (
-            self.config.dbName, self.config.dbUser, self.config.dbURI, self.config.dbPassword
+            config.db_name, config.db_user, config.db_uri, config.db_password
         )
         conn = psg.connect(connect_str)
         conn.autocommit = True
