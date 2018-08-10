@@ -229,6 +229,13 @@ class DB:
 
         return {}
 
+    def remove_apn_token(self, apn_token):
+
+        self.db.execute("""
+                UPDATE users SET apn_token = null WHERE apn_token = %s
+            """,
+            (apn_token,))
+
     def prepare_password_request(self, email):
 
         self.db.execute("""
@@ -1131,6 +1138,14 @@ class DB:
             (tid,))
 
         return self.db.fetchone()
+
+    def get_all_apn_tokens(self):
+
+        self.db.execute("""
+                SELECT apn_token FROM users WHERE apn_token IS NOT null
+            """)
+
+        return list(map(lambda x: x[0], self.db.fetchall()))
 
 
     ### HELPERS ###

@@ -41,7 +41,11 @@ async def create_event(request):
     if 'error' in res:
         return json_response({'error': res['error']}, status=res['status'])
 
-    pusher.send_event_notifications(title)
+    rejected_tokens = pusher.send_event_notifications(db.get_all_apn_tokens(),
+                                                      title)
+
+    for apn_token in rejected_tokens:
+        db.remove_apn_token(apn_token)
 
     return json_response(res, status=201)
 

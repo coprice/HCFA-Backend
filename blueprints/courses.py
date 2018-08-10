@@ -276,7 +276,9 @@ async def complete_request(request):
             leader += "'s"
 
         message = 'You\'ve been added to {} {} {}!'.format(leader, year, gender)
-        pusher.send_notification(apn_token, message)
+        rejected = pusher.send_notification(apn_token, message)
+        if rejected:
+            db.remove_apn_token(apn_token)
 
     return redirect('{}/request/completed?msg={}'.\
         format(baseURI, 'Success! User was added to the course.'))

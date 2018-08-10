@@ -232,7 +232,7 @@ async def complete_request(request):
     res = db.complete_team_request(uid, tid, token, form['email'][0],
                                    form['password'][0])
     team = db.get_team_info(tid)
-    user = db.get_users_info()
+    user = db.get_users_info(uid)
 
     error = None
     if 'error' in res:
@@ -250,7 +250,10 @@ async def complete_request(request):
 
     if apn_token:
         message = 'You\'ve been added to {}!'.format(team[0])
-        pusher.send_notification(apn_token, message)
+
+        rejected = pusher.send_notification(apn_token, message)
+        if rejected:
+            db.remove_apn_token(apn_token)
 
     return redirect('{}/request/completed?msg={}'.\
         format(baseURI, 'Success! User was added to the team.'))
