@@ -52,12 +52,20 @@ async def create_team(request):
         'members' not in body or 'admins' not in body:
         return json_response({'error': 'Bad Request'}, status=400)
 
-    res = db.create_team(body['uid'], body['token'], body['name'],
+    name = body['name']
+    res = db.create_team(body['uid'], body['token'], name,
                          body['description'], body['leaders'], body['meetings'],
                          body['groupme'], body['members'], body['admins'])
 
     if 'error' in res:
         return json_response({'error': res['error']}, status=res['status'])
+
+    ids = res['members'] + res['admins']
+    msg = 'You\'ve been added to {}!'.format(name)
+    rejected_tokens = pusher.send_notifications(db.get_apn_tokens(ids), msg)
+
+    for apn_token in rejected_tokens:
+        db.remove_apn_token(apn_token)
 
     return json_response(res, status=201)
 
@@ -83,13 +91,20 @@ async def update_team(request):
         'groupme' not in body or 'members' not in body or 'admins' not in body:
         return json_response({'error': 'Bad Request'}, status=400)
 
-
-    res = db.update_team(body['uid'], body['token'], body['tid'], body['name'],
+    name = body['name']
+    res = db.update_team(body['uid'], body['token'], body['tid'], name,
                          body['description'], body['leaders'], body['meetings'],
                          body['groupme'], body['members'], body['admins'])
 
     if 'error' in res:
         return json_response({'error': res['error']}, status=res['status'])
+
+    msg = 'You\'ve been added to {}!'.format(name)
+    tokens = db.get_apn_tokens(res['new_members'])
+    rejected_tokens = pusher.send_notifications(tokens, msg)
+
+    for apn_token in rejected_tokens:
+        db.remove_apn_token(apn_token)
 
     return json_response({}, status=200)
 

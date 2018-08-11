@@ -504,6 +504,8 @@ class DB:
 
         return {
             'cid': cid,
+            'members': member_ids,
+            'admins': admin_ids
         }
 
     def update_course(self, uid, token, cid, leader_first, leader_last,
@@ -511,10 +513,13 @@ class DB:
                       abcls, groupme, members, admins):
 
         self.db.execute("""
-                SELECT uid FROM course_members WHERE cid = %s AND is_admin = TRUE
+                SELECT uid, is_admin FROM course_members WHERE cid = %s
             """,
             (cid,))
-        current_admins = map(lambda x: x[0], self.db.fetchall())
+        past_member_ids = self.db.fetchall()
+
+        past_admins = map(lambda x: x[0], filter(lambda x: x[1],
+                                                 past_member_ids))
 
         self.db.execute("""
                 SELECT admin FROM users WHERE uid = %s AND token = %s
@@ -522,7 +527,7 @@ class DB:
             (uid, token))
 
         row = self.db.fetchone()
-        if row is None or not (row[0] or uid in current_admins):
+        if row is None or not (row[0] or uid in past_admins):
             return {'error': 'Session Expired', 'status': 403}
 
         ids = self.get_user_ids(members, admins)
@@ -580,7 +585,8 @@ class DB:
                 """,
                 (uid, cid))
 
-        return {}
+        new_members = list(set(member_ids + admin_ids) - set(past_member_ids))
+        return {'new_members': new_members}
 
     def delete_course(self, uid, token, cid):
 
@@ -859,16 +865,21 @@ class DB:
 
         return {
             'tid': tid,
+            'members': member_ids,
+            'admins': admin_ids
         }
 
     def update_team(self, uid, token, tid, name, description, leaders,
                    meetings, groupme, members, admins):
 
         self.db.execute("""
-                SELECT uid FROM team_members WHERE tid = %s AND is_admin = TRUE
+                SELECT uid, is_admin FROM team_members WHERE tid = %s
             """,
             (tid,))
-        current_admins = map(lambda x: x[0], self.db.fetchall())
+        past_member_ids = self.db.fetchall()
+
+        past_admins = map(lambda x: x[0], filter(lambda x: x[1],
+                                                 past_member_ids))
 
         self.db.execute("""
                 SELECT admin FROM users WHERE uid = %s AND token = %s
@@ -876,7 +887,7 @@ class DB:
             (uid, token))
 
         row = self.db.fetchone()
-        if row is None or not (row[0] or uid in current_admins):
+        if row is None or not (row[0] or uid in past_admins):
             return {'error': 'Session Expired', 'status': 403}
 
         ids = self.get_user_ids(members, admins)
@@ -933,7 +944,8 @@ class DB:
                 """,
                 (uid, tid))
 
-        return {}
+        new_members = list(set(member_ids + admin_ids) - set(past_member_ids))
+        return {'new_members': new_members}
 
     def delete_team(self, uid, token, tid):
 
@@ -1145,6 +1157,21 @@ class DB:
             """)
 
         return list(map(lambda x: x[0], self.db.fetchall()))
+
+    def get_apn_tokens(self, ids):
+
+        tokens = []
+        for uid in ids:
+            self.db.execute("""
+                    SELECT apn_token FROM users
+                    WHERE apn_token IS NOT null AND uid = %s
+                """,
+                (uid,))
+
+            res = self.db.fetchone()
+            if res is not None:
+                tokens.append(res[0])
+        return tokens
 
 
     ### HELPERS ###

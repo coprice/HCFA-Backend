@@ -52,14 +52,28 @@ async def create_course(request):
         'groupme' not in body or 'members' not in body or 'admins' not in body:
         return json_response({'error': 'Bad request'}, status=400)
 
-    res = db.create_course(body['uid'], body['token'], body['leader_first'],
-                           body['leader_last'], body['year'], body['gender'],
-                           body['location'], body['material'], body['meetings'],
-                           body['abcls'], body['groupme'], body['members'],
-                           body['admins'])
+    leader, year, gender = body['leader_first'], body['year'], body['gender']
+
+    res = db.create_course(body['uid'], body['token'], leader,
+                           body['leader_last'], year, gender, body['location'],
+                           body['material'], body['meetings'], body['abcls'],
+                           body['groupme'], body['members'], body['admins'])
 
     if 'error' in res:
         return json_response({'error': res['error']}, status=res['status'])
+
+    ids = res['members'] + res['admins']
+
+    if leader.endswith('s'):
+        leader += "'"
+    else:
+        leader += "'s"
+
+    msg = 'You\'ve been added to {} {} {}!'.format(leader, year, gender)
+    rejected_tokens = pusher.send_notifications(db.get_apn_tokens(ids), msg)
+
+    for apn_token in rejected_tokens:
+        db.remove_apn_token(apn_token)
 
     return json_response(res, status=201)
 
@@ -90,14 +104,29 @@ async def update_course(request):
         'groupme' not in body or 'members' not in body or 'admins' not in body:
         return json_response({'error': 'Bad request'}, status=400)
 
+    leader, year, gender = body['leader_first'], body['year'], body['gender']
+
     res = db.update_course(body['uid'], body['token'], body['cid'],
-                           body['leader_first'], body['leader_last'],
-                           body['year'], body['gender'], body['location'],
-                           body['material'], body['meetings'], body['abcls'],
-                           body['groupme'], body['members'], body['admins'])
+                           leader, body['leader_last'], year, gender,
+                           body['location'], body['material'], body['meetings'],
+                           body['abcls'], body['groupme'], body['members'],
+                           body['admins'])
 
     if 'error' in res:
         return json_response({'error': res['error']}, status=res['status'])
+
+    if leader.endswith('s'):
+        leader += "'"
+    else:
+        leader += "'s"
+
+    tokens = db.get_apn_tokens(res['new_members'])
+
+    msg = 'You\'ve been added to {} {} {}!'.format(leader, year, gender)
+    rejected_tokens = pusher.send_notifications(tokens, msg)
+
+    for apn_token in rejected_tokens:
+        db.remove_apn_token(apn_token)
 
     return json_response({}, status=201)
 
