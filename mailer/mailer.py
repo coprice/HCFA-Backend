@@ -8,6 +8,7 @@ class Mailer:
         self.user = config.mailer_email
         self.server = smtplib.SMTP_SSL('smtp.gmail.com')
         self.server.login(self.user, config.mailer_password)
+        self.server.ehlo()
 
     def send_request(self, name, email, message, request_type, link, admins, title):
 
