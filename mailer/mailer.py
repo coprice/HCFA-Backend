@@ -6,11 +6,11 @@ from config.config import config
 class Mailer:
     def __init__(self):
         self.user = config.mailer_email
+        self.password = config.mailer_password
         self.server = smtplib.SMTP_SSL('smtp.gmail.com')
-        self.server.login(self.user, config.mailer_password)
-        self.server.ehlo()
 
     def send_request(self, name, email, message, request_type, link, admins, title):
+        self.server.login(self.user, self.password)
 
         msg = "{}: {}\nName: {}\nEmail: {}\nMessage: {}\n\nClick the following link to add this user to the {}:\n\n{}".\
             format(request_type, title, name, email, message, request_type.lower(), link)
@@ -26,6 +26,7 @@ class Mailer:
             return False
 
     def send_reset(self, email, link):
+        self.server.login(self.user, self.password)
 
         msg = "Reset your password here: {}".format(link)
         text = "From: {}\r\nTo: {}\r\nSubject: [NO REPLY] Password Reset\r\n\r\n{}".\
@@ -36,5 +37,6 @@ class Mailer:
             return True
         except:
             return False
+
 
 mailer = Mailer()

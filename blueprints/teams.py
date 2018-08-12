@@ -61,7 +61,7 @@ async def create_team(request):
         return json_response({'error': res['error']}, status=res['status'])
 
     ids = res['members'] + res['admins']
-    msg = 'You\'ve been added to {}!'.format(name)
+    msg = 'You\'ve been added to {} Team!'.format(name)
     rejected_tokens = pusher.send_notifications(db.get_apn_tokens(ids), msg)
 
     for apn_token in rejected_tokens:

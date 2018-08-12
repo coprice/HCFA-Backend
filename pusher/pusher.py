@@ -2,16 +2,18 @@ from time import time
 from apns.apns import APNs, Frame, Payload
 from config.config import config
 
+
 class Pusher(object):
 
     def __init__(self):
         print('Opening connection to APNS...')
         self.cert = config.cert_file
         self.key = config.key_file
+        self.use_sandbox = not config.is_prod(config.env)
         self.reset_connection()
 
     def reset_connection(self):
-        self.apns = APNs(use_sandbox=True, cert_file=self.cert,
+        self.apns = APNs(use_sandbox=self.use_sandbox, cert_file=self.cert,
                          key_file=self.key)
         self.stamp = time()
         self.failed = set()
@@ -52,5 +54,6 @@ class Pusher(object):
             self.apns.gateway_server.send_notification_multiple(frame)
 
         return rejected_tokens
+
 
 pusher = Pusher()

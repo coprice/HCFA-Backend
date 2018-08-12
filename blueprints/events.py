@@ -72,12 +72,19 @@ async def update_event(request):
         'description' not in body or 'image' not in body:
         return json_response({'error': 'Bad request'}, status=400)
 
-    res = db.update_event(body['uid'], body['token'], body['eid'], body['title'], \
-                          body['location'], body['start'], body['end'], \
+    title = body['title']
+    res = db.update_event(body['uid'], body['token'], body['eid'], title,
+                          body['location'], body['start'], body['end'],
                           body['description'], body['image'])
 
     if 'error' in res:
         return json_response({'error': res['error']}, status=res['status'])
+
+    msg = 'Some changes have been made to {}. Check them out!'.format(title)
+    rejected_tokens = pusher.send_notifications(db.get_all_apn_tokens(), msg)
+
+    for apn_token in rejected_tokens:
+        db.remove_apn_token(apn_token)
 
     return json_response({}, status=201)
 
