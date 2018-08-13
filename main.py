@@ -27,4 +27,4 @@ app.blueprint(healthcheck)
 
 if __name__ == "__main__":
     print('Starting up hcfa_app server...')
-    app.run(host="10.0.0.112", port=8080)
+    app.run(host="0.0.0.0", port=8080)
