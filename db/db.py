@@ -1156,7 +1156,7 @@ class DB:
                 SELECT apn_token FROM users WHERE apn_token IS NOT null
             """)
 
-        return list(map(lambda x: x[0], self.db.fetchall()))
+        return list(set(map(lambda x: x[0], self.db.fetchall())))
 
     def get_apn_tokens(self, ids):
 

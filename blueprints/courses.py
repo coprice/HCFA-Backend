@@ -70,7 +70,8 @@ async def create_course(request):
         leader += "'s"
 
     msg = 'You\'ve been added to {} {} {}!'.format(leader, year, gender)
-    rejected_tokens = pusher.send_notifications(db.get_apn_tokens(ids), msg)
+    rejected_tokens = pusher.send_notifications(db.get_apn_tokens(ids), msg,
+                                                'course')
 
     for apn_token in rejected_tokens:
         db.remove_apn_token(apn_token)
@@ -123,7 +124,7 @@ async def update_course(request):
     tokens = db.get_apn_tokens(res['new_members'])
 
     msg = 'You\'ve been added to {} {} {}!'.format(leader, year, gender)
-    rejected_tokens = pusher.send_notifications(tokens, msg)
+    rejected_tokens = pusher.send_notifications(tokens, msg, 'course')
 
     for apn_token in rejected_tokens:
         db.remove_apn_token(apn_token)
@@ -305,7 +306,7 @@ async def complete_request(request):
             leader += "'s"
 
         message = 'You\'ve been added to {} {} {}!'.format(leader, year, gender)
-        rejected = pusher.send_notification(apn_token, message)
+        rejected = pusher.send_notification(apn_token, message, 'course')
         if rejected:
             db.remove_apn_token(apn_token)
 

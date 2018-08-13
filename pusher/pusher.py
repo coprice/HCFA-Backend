@@ -24,22 +24,22 @@ class Pusher(object):
         if time() - self.stamp > 86400:
             self.reset_connection()
 
-    def send_notification(self, token, message):
+    def send_notification(self, token, message, category):
         self.reset_if_necessary()
 
         if token in self.failed:
             return token
         else:
-            payload = Payload(alert=message, sound='default',
+            payload = Payload(alert=message, sound='default', category=category,
                               badge=1, mutable_content=True)
             self.apns.gateway_server.send_notification(token, payload)
 
-    def send_notifications(self, tokens, message):
+    def send_notifications(self, tokens, message, category):
         self.reset_if_necessary()
 
         rejected_tokens = []
         payload = Payload(alert=message, sound='default', badge=1,
-                          mutable_content=True)
+                          mutable_content=True, category=category)
         frame = Frame()
         identifier = 1
         expiry = int(time()) + 3600

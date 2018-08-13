@@ -43,7 +43,8 @@ async def create_event(request):
         return json_response({'error': res['error']}, status=res['status'])
 
     msg = 'A new event ({}) has been added! Check it out!'.format(title)
-    rejected_tokens = pusher.send_notifications(db.get_all_apn_tokens(), msg)
+    rejected_tokens = pusher.send_notifications(db.get_all_apn_tokens(), msg,
+                                                'event')
 
     for apn_token in rejected_tokens:
         db.remove_apn_token(apn_token)
@@ -81,7 +82,8 @@ async def update_event(request):
         return json_response({'error': res['error']}, status=res['status'])
 
     msg = 'Some changes have been made to {}. Check them out!'.format(title)
-    rejected_tokens = pusher.send_notifications(db.get_all_apn_tokens(), msg)
+    rejected_tokens = pusher.send_notifications(db.get_all_apn_tokens(), msg,
+                                                'event')
 
     for apn_token in rejected_tokens:
         db.remove_apn_token(apn_token)
