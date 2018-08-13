@@ -239,7 +239,7 @@ async def display_request(request):
         return html(template('response.html').\
             render(message='Error: Course no longer exists', error=True))
 
-    first, last, email, _ = user
+    first, last, email = user
     leader, year, gender = course
 
     if leader.endswith('s'):
@@ -282,33 +282,29 @@ async def complete_request(request):
     res = db.complete_course_request(uid, cid, token, form['email'][0],
                                      form['password'][0])
     course = db.get_course_info(cid)
-    user = db.get_users_info(uid)
 
     error = None
     if 'error' in res:
         error = res['error']
     elif course is None:
         error = 'Bible course no longer exists'
-    elif user is None:
-        error = 'User does not exist'
 
     if error:
         return redirect('{}/request?uid={}&cid={}&token={}&error={}'.\
             format(baseURI, uid, cid, token, error))
 
-    _, _, _, apn_token = user
+    leader, year, gender = course
+    if leader.endswith('s'):
+        leader += "'"
+    else:
+        leader += "'s"
+    msg = 'You\'ve been added to {} {} {}!'.format(leader, year, gender)
 
-    if apn_token:
-        leader, year, gender = course
-        if leader.endswith('s'):
-            leader += "'"
-        else:
-            leader += "'s"
+    rejected_tokens = pusher.send_notifications(db.get_apn_tokens([uid]),
+                                                msg, 'course')
 
-        message = 'You\'ve been added to {} {} {}!'.format(leader, year, gender)
-        rejected = pusher.send_notification(apn_token, message, 'course')
-        if rejected:
-            db.remove_apn_token(apn_token)
+    for apn_token in rejected_tokens:
+        db.remove_apn_token(apn_token)
 
     return redirect('{}/request/completed?msg={}'.\
         format(baseURI, 'Success! User was added to the course.'))

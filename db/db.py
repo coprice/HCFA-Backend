@@ -73,6 +73,11 @@ class DB:
             """,
             (token, uid))
 
+        self.db.execute("""
+                SELECT apn_token FROM user_apn_tokens WHERE uid = %s
+            """,
+            (uid,))
+
         return {
             'uid': uid,
             'first_name': first_name,
@@ -81,7 +86,8 @@ class DB:
             'admin': admin,
             'leader': leader,
             'token': token,
-            'image': profile
+            'image': profile,
+            'apn_tokens': list(map(lambda x: x[0], self.db.fetchall()))
         }
 
     def validate_session(self, uid, token):
@@ -211,7 +217,7 @@ class DB:
 
         return {}
 
-    def update_apn_token(self, uid, token, apn_token):
+    def add_apn_token(self, uid, token, apn_token):
 
         self.db.execute("""
                 SELECT uid FROM users WHERE uid = %s AND token = %s
@@ -222,16 +228,26 @@ class DB:
             return {'error': 'Session Expired', 'status': 403}
 
         self.db.execute("""
-                UPDATE users SET apn_token = %s WHERE uid = %s
+                SELECT apn_token FROM user_apn_tokens WHERE uid = %s
             """,
-            (apn_token, uid))
+            (uid,))
+
+        users_apn_tokens = map(lambda x: x[0], self.db.fetchall())
+
+        if apn_token in users_apn_tokens:
+            return {'error': 'Token already in database', 'status': 403}
+
+        self.db.execute("""
+                INSERT INTO user_apn_tokens (uid, apn_token) VALUES (%s, %s)
+            """,
+            (uid, apn_token))
 
         return {}
 
     def remove_apn_token(self, apn_token):
 
         self.db.execute("""
-                UPDATE users SET apn_token = null WHERE apn_token = %s
+                DELETE FROM user_apn_tokens WHERE apn_token = %s
             """,
             (apn_token,))
 
@@ -1125,7 +1141,7 @@ class DB:
     def get_users_info(self, uid):
 
         self.db.execute("""
-                SELECT first_name, last_name, email, apn_token FROM users WHERE uid = %s
+                SELECT first_name, last_name, email FROM users WHERE uid = %s
             """,
             (uid,))
 
@@ -1153,7 +1169,7 @@ class DB:
     def get_all_apn_tokens(self):
 
         self.db.execute("""
-                SELECT apn_token FROM users WHERE apn_token IS NOT null
+                SELECT apn_token FROM user_apn_tokens
             """)
 
         return list(set(map(lambda x: x[0], self.db.fetchall())))
@@ -1163,14 +1179,11 @@ class DB:
         tokens = []
         for uid in ids:
             self.db.execute("""
-                    SELECT apn_token FROM users
-                    WHERE apn_token IS NOT null AND uid = %s
+                    SELECT apn_token FROM user_apn_tokens WHERE uid = %s
                 """,
                 (uid,))
 
-            res = self.db.fetchone()
-            if res is not None:
-                tokens.append(res[0])
+            tokens.extend(map(lambda x: x[0], self.db.fetchall()))
         return tokens
 
 

@@ -212,7 +212,7 @@ async def display_request(request):
             render(message='Error: Team does not exist (or no longer exists)',
                    error=True))
 
-    first, last, email, _ = user
+    first, last, email = user
     (name,) = team
 
     message = 'Sign in to add {} ({} {}) to {}'.format(email, first, last, name)
@@ -248,28 +248,23 @@ async def complete_request(request):
     res = db.complete_team_request(uid, tid, token, form['email'][0],
                                    form['password'][0])
     team = db.get_team_info(tid)
-    user = db.get_users_info(uid)
 
     error = None
     if 'error' in res:
         error = res['error']
     elif team is None:
         error = 'Ministry team no longer exists'
-    elif user is None:
-        error = 'User does not exist'
 
     if error:
         return redirect('{}/request?uid={}&tid={}&token={}&error={}'.\
             format(baseURI, uid, tid, token, error))
 
-    _, _, _, apn_token = user
+    msg = 'You\'ve been added to {} Team!'.format(team[0])
+    rejected_tokens = pusher.send_notifications(db.get_apn_tokens([uid]),
+                                                msg, 'team')
 
-    if apn_token:
-        message = 'You\'ve been added to {}!'.format(team[0])
-
-        rejected = pusher.send_notification(apn_token, message, 'team')
-        if rejected:
-            db.remove_apn_token(apn_token)
+    for apn_token in rejected_tokens:
+        db.remove_apn_token(apn_token)
 
     return redirect('{}/request/completed?msg={}'.\
         format(baseURI, 'Success! User was added to the team.'))

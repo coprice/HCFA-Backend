@@ -6,7 +6,6 @@ from config.config import config
 class Pusher(object):
 
     def __init__(self):
-        print('Opening connection to APNS...')
         self.cert = config.cert_file
         self.key = config.key_file
         self.use_sandbox = not config.is_prod(config.env)
@@ -20,22 +19,9 @@ class Pusher(object):
         for token, _ in self.apns.feedback_server.items():
             self.failed.add(token)
 
-    def reset_if_necessary(self):
+    def send_notifications(self, tokens, message, category):
         if time() - self.stamp > 86400:
             self.reset_connection()
-
-    def send_notification(self, token, message, category):
-        self.reset_if_necessary()
-
-        if token in self.failed:
-            return token
-        else:
-            payload = Payload(alert=message, sound='default', category=category,
-                              badge=1, mutable_content=True)
-            self.apns.gateway_server.send_notification(token, payload)
-
-    def send_notifications(self, tokens, message, category):
-        self.reset_if_necessary()
 
         rejected_tokens = []
         payload = Payload(alert=message, sound='default', badge=1,

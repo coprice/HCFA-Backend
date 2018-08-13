@@ -225,16 +225,17 @@ async def update_image(request):
 # POST - users/update/apn
 # {
 #     uid: int,
-#     token: string
+#     token: string,
+#     apn_token: string
 # }
 @users.route(baseURI + '/update/apn', methods=['POST'])
-async def update_apn_token(request):
+async def add_apn_token(request):
     body = request.json
 
     if 'uid' not in body or 'token' not in body or 'apn_token' not in body:
         return json_response({'error': 'Bad request'}, status=400)
 
-    res = db.update_apn_token(body['uid'], body['token'], body['apn_token'])
+    res = db.add_apn_token(body['uid'], body['token'], body['apn_token'])
 
     if 'error' in res:
         return json_response({'error': res['error']}, status=res['status'])

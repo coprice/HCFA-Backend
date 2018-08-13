@@ -6,8 +6,7 @@ CREATE TABLE users(uid SERIAL PRIMARY KEY,
                    admin BOOLEAN DEFAULT FALSE,
                    leader BOOLEAN DEFAULT FALSE,
                    token VARCHAR,
-                   profile VARCHAR,
-                   apn_token VARCHAR)
+                   profile VARCHAR)
 
 CREATE TABLE events(eid SERIAL PRIMARY KEY,
                     title VARCHAR NOT NULL,
@@ -58,3 +57,6 @@ CREATE TABLE team_requests(uid INTEGER NOT NULL,
 
 CREATE TABLE password_requests(uid INTEGER NOT NULL,
                                token VARCHAR NOT NULL)
+
+CREATE TABLE user_apn_tokens(uid INTEGER NOT NULL,
+                             apn_token VARCHAR NOT NULL)
