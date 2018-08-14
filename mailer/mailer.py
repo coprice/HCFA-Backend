@@ -12,7 +12,7 @@ class Mailer:
         server = smtplib.SMTP_SSL('smtp.gmail.com')
         server.login(self.user, self.password)
 
-        msg = "{}: {}\nName: {}\nEmail: {}\nMessage: {}\n\nClick the following link to add this user to the {}:\n\n{}".\
+        msg = "{}: {}\nName: {}\nEmail: {}\nMessage: {}\n\nSign in at the following link to add this user to the {}:\n\n{}".\
             format(request_type, title, name, email, message, request_type.lower(), link)
         subject = '{} Request'.format(request_type)
 
@@ -29,7 +29,7 @@ class Mailer:
         server = smtplib.SMTP_SSL('smtp.gmail.com')
         server.login(self.user, self.password)
 
-        msg = "Reset your password here: {}".format(link)
+        msg = "Reset your password at the following link:\n\n{}".format(link)
         text = "From: {}\r\nTo: {}\r\nSubject: [NO REPLY] Password Reset\r\n\r\n{}".\
             format(self.user, email, msg)
 
