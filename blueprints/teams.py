@@ -215,7 +215,8 @@ async def display_request(request):
     first, last, email = user
     (name,) = team
 
-    message = 'Sign in to add {} ({} {}) to {}'.format(email, first, last, name)
+    message = 'Sign in to add {} ({} {}) to {} Team'.format(email, first,
+                                                            last, name)
     action = '{}/request/complete'.format(baseURI)
 
     if 'error' in args:
