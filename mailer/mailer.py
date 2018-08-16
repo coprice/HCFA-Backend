@@ -11,6 +11,8 @@ class Mailer:
     def send_request(self, name, email, message, request_type, link, admins, title):
         server = smtplib.SMTP_SSL('smtp.gmail.com')
         server.login(self.user, self.password)
+        if message:
+            message = message.replace("’", "'").replace('“', '').replace('”', '')
 
         msg = "{}: {}\nName: {}\nEmail: {}\nMessage: {}\n\nSign in at the following link to add this user to the {}:\n\n{}".\
             format(request_type, title, name, email, message, request_type.lower(), link)
