@@ -62,8 +62,8 @@ async def create_team(request):
 
     ids = res['members'] + res['admins']
     msg = 'You\'ve been added to {} Team!'.format(name)
-    rejected_tokens = pusher.send_notifications(db.get_apn_tokens(ids), msg,
-                                                'team')
+    rejected_tokens = pusher.send_notifications(db.get_team_apn_tokens(ids),
+                                                msg, 'team')
 
     for apn_token in rejected_tokens:
         db.remove_apn_token(apn_token)
@@ -101,7 +101,7 @@ async def update_team(request):
         return json_response({'error': res['error']}, status=res['status'])
 
     msg = 'You\'ve been added to {} Team!'.format(name)
-    tokens = db.get_apn_tokens(res['new_members'])
+    tokens = db.get_team_apn_tokens(res['new_members'])
     rejected_tokens = pusher.send_notifications(tokens, msg, 'team')
 
     for apn_token in rejected_tokens:
@@ -261,7 +261,7 @@ async def complete_request(request):
             format(baseURI, uid, tid, token, error))
 
     msg = 'You\'ve been added to {} Team!'.format(team[0])
-    rejected_tokens = pusher.send_notifications(db.get_apn_tokens([uid]),
+    rejected_tokens = pusher.send_notifications(db.get_team_apn_tokens([uid]),
                                                 msg, 'team')
 
     for apn_token in rejected_tokens:

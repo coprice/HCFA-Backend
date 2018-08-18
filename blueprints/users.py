@@ -206,6 +206,7 @@ async def update_contact(request):
 # POST - users/update/image
 # {
 #     uid: int,
+#     token: string,
 #     image: string
 # }
 @users.route(baseURI + '/update/image', methods=['POST'])
@@ -216,6 +217,29 @@ async def update_image(request):
         return json_response({ 'error': 'Bad request' }, status=400)
 
     res = db.update_image(body['uid'], body['token'], body['image'])
+
+    if 'error' in res:
+        return json_response({'error': res['error']}, status=res['status'])
+
+    return json_response({}, status=201)
+
+# POST - users/update/notifications
+# {
+#     uid: int,
+#     token: string,
+#     ntf_type: string,
+#     ntf_bool: bool
+# }
+@users.route(baseURI + '/update/notifications', methods=['POST'])
+async def update_notifications(request):
+    body = request.json
+
+    if 'uid' not in body or 'token' not in body or 'ntf_type' not in body or \
+        'ntf_bool' not in body:
+        return json_response({ 'error': 'Bad request' }, status=400)
+
+    res = db.update_notifications(body['uid'], body['token'],
+                                  body['ntf_type'], body['ntf_bool'])
 
     if 'error' in res:
         return json_response({'error': res['error']}, status=res['status'])

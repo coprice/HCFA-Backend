@@ -15,6 +15,8 @@ class DB:
 
     def register_user(self, first_name, last_name, email, password):
 
+        email = email.lower()
+
         self.db.execute("""
                 SELECT uid FROM users WHERE email = %s
             """,
@@ -52,10 +54,13 @@ class DB:
 
     def login_user(self, email, password):
 
+        email = email.lower()
         pass_hash = hashlib.sha1(password.encode('utf-8')).hexdigest()
 
         self.db.execute("""
-                SELECT uid, first_name, last_name, admin, leader, profile
+                SELECT uid, first_name, last_name, admin, leader, profile,
+                       event_notifications, course_notifications,
+                       team_notifications
                 FROM users
                 WHERE email = %s AND pass = %s
             """,
@@ -65,7 +70,8 @@ class DB:
         if row is None:
             return {'error': 'Invalid email or password', 'status': 401}
 
-        uid, first_name, last_name, admin, leader, profile = row
+        uid, first_name, last_name, admin, leader,\
+        profile, event_ntf, course_ntf, team_ntf = row
 
         token = secrets.token_hex()
         self.db.execute("""
@@ -87,7 +93,10 @@ class DB:
             'leader': leader,
             'token': token,
             'image': profile,
-            'apn_tokens': list(map(lambda x: x[0], self.db.fetchall()))
+            'apn_tokens': list(map(lambda x: x[0], self.db.fetchall())),
+            'event_ntf': event_ntf,
+            'course_ntf': course_ntf,
+            'team_ntf': team_ntf
         }
 
     def validate_session(self, uid, token):
@@ -144,12 +153,7 @@ class DB:
 
     def change_password(self, uid, token, old_password, new_password):
 
-        self.db.execute("""
-                SELECT uid FROM users WHERE uid = %s AND token = %s
-            """,
-            (uid, token))
-
-        if self.db.fetchone() is None:
+        if not self.validate_session(uid, token):
             return {'error': 'Session Expired', 'status': 403}
 
         old_hash = hashlib.sha1(old_password.encode('utf-8')).hexdigest()
@@ -173,6 +177,8 @@ class DB:
 
     def update_contact(self, uid, token, first, last, email):
 
+        email = email.lower()
+
         self.db.execute("""
                 SELECT email FROM users WHERE uid = %s AND token = %s
             """,
@@ -182,7 +188,7 @@ class DB:
         if res is None:
             return {'error': 'Session Expired', 'status': 403}
 
-        if res[0] != email:
+        if res[0] != email: # user wants to change their email
             self.db.execute("""
                     SELECT uid FROM users WHERE email = %s
                 """,
@@ -202,12 +208,7 @@ class DB:
 
     def update_image(self, uid, token, image):
 
-        self.db.execute("""
-                SELECT uid FROM users WHERE uid = %s AND token = %s
-            """,
-            (uid, token))
-
-        if self.db.fetchone() is None:
+        if not self.validate_session(uid, token):
             return {'error': 'Session Expired', 'status': 403}
 
         self.db.execute("""
@@ -217,25 +218,40 @@ class DB:
 
         return {}
 
-    def add_apn_token(self, uid, token, apn_token):
+    def update_notifications(self, uid, token, ntf_type, ntf_bool):
 
-        self.db.execute("""
-                SELECT uid FROM users WHERE uid = %s AND token = %s
-            """,
-            (uid, token))
-
-        if self.db.fetchone() is None:
+        if not self.validate_session(uid, token):
             return {'error': 'Session Expired', 'status': 403}
 
         self.db.execute("""
-                SELECT apn_token FROM user_apn_tokens WHERE uid = %s
-            """,
+                UPDATE users SET {ntf_type} = {ntf_bool} WHERE uid = %s
+            """.format(ntf_type=ntf_type, ntf_bool=ntf_bool),
             (uid,))
 
-        users_apn_tokens = map(lambda x: x[0], self.db.fetchall())
+        return {}
 
-        if apn_token in users_apn_tokens:
+    def add_apn_token(self, uid, token, apn_token):
+
+        if not self.validate_session(uid, token):
+            return {'error': 'Session Expired', 'status': 403}
+
+        self.db.execute("""
+                SELECT apn_token FROM user_apn_tokens
+                WHERE uid = %s AND apn_token = %s
+            """,
+            (uid, apn_token))
+
+        if self.db.fetchone() is not None:
             return {'error': 'Token already in database', 'status': 403}
+
+        self.db.execute("""
+                SELECT apn_token FROM user_apn_tokens
+                WHERE uid != %s AND apn_token = %s
+            """,
+            (uid, apn_token))
+
+        if self.db.fetchone() is not None:
+            self.remove_apn_token(apn_token)
 
         self.db.execute("""
                 INSERT INTO user_apn_tokens (uid, apn_token) VALUES (%s, %s)
@@ -252,6 +268,8 @@ class DB:
             (apn_token,))
 
     def prepare_password_request(self, email):
+
+        email = email.lower()
 
         self.db.execute("""
                 SELECT uid FROM users WHERE email = %s
@@ -412,12 +430,7 @@ class DB:
 
     def get_courses(self, uid, token):
 
-        self.db.execute("""
-                SELECT uid FROM users WHERE uid = %s AND token = %s
-            """,
-            (uid, token))
-
-        if self.db.fetchone() is None:
+        if not self.validate_session(uid, token):
             return {'error': 'Session Expired', 'status': 403}
 
         self.db.execute("""
@@ -635,12 +648,7 @@ class DB:
 
     def leave_course(self, uid, token, cid):
 
-        self.db.execute("""
-                SELECT uid FROM users WHERE uid = %s AND token = %s
-            """,
-            (uid, token))
-
-        if self.db.fetchone() is None:
+        if not self.validate_session(uid, token):
             return {'error': 'Session Expired', 'status': 403}
 
         self.db.execute("""
@@ -723,6 +731,8 @@ class DB:
 
     def complete_course_request(self, uid, cid, token, email, password):
 
+        email = email.lower()
+
         self.db.execute("""
                 SELECT uid FROM course_requests
                 WHERE uid = %s AND cid = %s AND token = %s
@@ -780,12 +790,7 @@ class DB:
 
     def get_teams(self, uid, token):
 
-        self.db.execute("""
-                SELECT uid FROM users WHERE uid = %s AND token = %s
-            """,
-            (uid, token))
-
-        if self.db.fetchone() is None:
+        if not self.validate_session(uid, token):
             return {'error': 'Session Expired', 'status': 403}
 
         self.db.execute("""
@@ -994,12 +999,7 @@ class DB:
 
     def leave_team(self, uid, token, tid):
 
-        self.db.execute("""
-                SELECT uid FROM users WHERE uid = %s AND token = %s
-            """,
-            (uid, token))
-
-        if self.db.fetchone() is None:
+        if not self.validate_session(uid, token):
             return {'error': 'Session Expired', 'status': 403}
 
         self.db.execute("""
@@ -1080,6 +1080,8 @@ class DB:
         return self.db.fetchone() is not None
 
     def complete_team_request(self, uid, tid, token, email, password):
+
+        email = email.lower()
 
         self.db.execute("""
                 SELECT tid FROM team_requests
@@ -1166,24 +1168,53 @@ class DB:
 
         return self.db.fetchone()
 
-    def get_all_apn_tokens(self):
+    def get_event_apn_tokens(self):
 
         self.db.execute("""
-                SELECT apn_token FROM user_apn_tokens
+                SELECT apn.apn_token FROM user_apn_tokens apn JOIN users
+                ON apn.uid = users.uid AND event_notifications = TRUE
             """)
 
-        return list(set(map(lambda x: x[0], self.db.fetchall())))
+        return list(map(lambda x: x[0], self.db.fetchall()))
 
-    def get_apn_tokens(self, ids):
+    def get_course_apn_tokens(self, ids):
 
         tokens = []
         for uid in ids:
+
             self.db.execute("""
+                    SELECT course_notifications FROM users WHERE uid = %s
+                """,
+                (uid,))
+
+            row = self.db.fetchone()
+            if row is not None and row[0]:
+                self.db.execute("""
                     SELECT apn_token FROM user_apn_tokens WHERE uid = %s
                 """,
                 (uid,))
 
-            tokens.extend(map(lambda x: x[0], self.db.fetchall()))
+                tokens.extend(map(lambda x: x[0], self.db.fetchall()))
+        return tokens
+
+    def get_team_apn_tokens(self, ids):
+
+        tokens = []
+        for uid in ids:
+
+            self.db.execute("""
+                    SELECT team_notifications FROM users WHERE uid = %s
+                """,
+                (uid,))
+
+            row = self.db.fetchone()
+            if row is not None and row[0]:
+                self.db.execute("""
+                    SELECT apn_token FROM user_apn_tokens WHERE uid = %s
+                """,
+                (uid,))
+
+                tokens.extend(map(lambda x: x[0], self.db.fetchall()))
         return tokens
 
 
