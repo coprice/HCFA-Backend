@@ -37,7 +37,11 @@ class Pusher(object):
                 frame.add_item(token, payload, identifier, expiry, priority)
 
         if len(rejected_tokens) != len(tokens):
-            self.apns.gateway_server.send_notification_multiple(frame)
+            try:
+                self.apns.gateway_server.send_notification_multiple(frame)
+            except:
+                self.reset_connection()
+                self.apns.gateway_server.send_notification_multiple(frame)
 
         return rejected_tokens
 
