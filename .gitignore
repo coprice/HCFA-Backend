@@ -5,3 +5,5 @@ static/semantic/
 pems
 apns
 config
+deploy.sh
+dockerfile
