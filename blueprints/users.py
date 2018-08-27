@@ -283,8 +283,8 @@ async def send_reset(request):
     if 'error' in res:
         return json_response({'error': res['error']}, status=res['status'])
 
-    link = '{}?uid={}&token={}'.\
-        format(request.url.replace('/send', ''), res['uid'], res['token'])
+    link = 'https://hcfa-app.com/users/reset?uid={}&token={}'.\
+        format(res['uid'], res['token'])
 
     sent = mailer.send_reset(email, link)
 

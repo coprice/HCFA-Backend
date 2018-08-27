@@ -192,8 +192,8 @@ async def send_course_request(request):
     if 'error' in res:
         return json_response({'error': res['error']}, status=res['status'])
 
-    link = '{}?uid={}&cid={}&token={}'.\
-        format(request.url.replace('/send', ''), uid, cid, res['token'])
+    link = 'https://hcfa-app.com/courses/request?uid={}&cid={}&token={}'.\
+        format(uid, cid, res['token'])
 
     course = db.get_course_info(cid)
     if course is None:

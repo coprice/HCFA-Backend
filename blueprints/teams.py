@@ -170,8 +170,8 @@ async def send_team_request(request):
     if 'error' in res:
         return json_response({'error': res['error']}, status=res['status'])
 
-    link = '{}?uid={}&tid={}&token={}'.\
-        format(request.url.replace('/send', ''), uid, tid, res['token'])
+    link = 'https://hcfa-app.com/teams/request?uid={}&tid={}&token={}'.\
+        format(uid, tid, res['token'])
 
     team = db.get_team_info(tid)
     if team is None:
