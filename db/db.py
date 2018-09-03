@@ -330,25 +330,26 @@ class DB:
 
         self.db.execute("""
                 SELECT * FROM events
-                WHERE current_timestamp < TO_TIMESTAMP(end_date, 'YYYY-MM-DD HH24:MI:SS')
+                WHERE (current_timestamp - interval '4 hours') <= TO_TIMESTAMP(end_date, 'YYYY-MM-DD HH24:MI:SS')
                 ORDER BY TO_TIMESTAMP(start_date, 'YYYY-MM-DD HH24:MI:SS')
             """)
 
         upcoming_rows = map(lambda x: {'eid': x[0], 'title': x[1],
-                            'location': x[2], 'start': x[3],
-                            'end': x[4], 'description': x[5],'image': x[6]},
+                                       'location': x[2], 'start': x[3],
+                                       'end': x[4], 'description': x[5],
+                                       'image': x[6]},
                             self.db.fetchall())
 
         self.db.execute("""
                 SELECT * FROM events
-                WHERE current_timestamp > TO_TIMESTAMP(end_date, 'YYYY-MM-DD HH24:MI:SS')
+                WHERE (current_timestamp - interval '4 hours') > TO_TIMESTAMP(end_date, 'YYYY-MM-DD HH24:MI:SS')
                 ORDER BY TO_TIMESTAMP(start_date, 'YYYY-MM-DD HH24:MI:SS') DESC
             """)
 
         past_rows = map(lambda x: {'eid': x[0], 'title': x[1], 'location': x[2],
                                    'start': x[3], 'end': x[4],
-                                   'description': x[5],'image': x[6]},
-                            self.db.fetchall())
+                                   'description': x[5], 'image': x[6]},
+                        self.db.fetchall())
 
         return {
             'upcoming_events': upcoming_rows,
@@ -367,7 +368,8 @@ class DB:
             return {'error': 'Session Expired', 'status': 403}
 
         self.db.execute("""
-                INSERT INTO events (title, event_location, start_date, end_date, description, image)
+                INSERT INTO events (title, event_location, start_date,
+                                    end_date, description, image)
                 VALUES (%s, %s, %s, %s, %s, %s)
                 RETURNING eid
             """,
