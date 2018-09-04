@@ -2,6 +2,7 @@ aiofiles==0.3.2
 certifi==2018.4.16
 chardet==3.0.4
 httptools==0.0.11
+humanize==0.5.1
 idna==2.7
 Jinja2==2.10
 MarkupSafe==1.0

@@ -398,17 +398,27 @@ class DB:
             return {'error': 'Session Expired', 'status': 403}
 
         self.db.execute("""
+                SELECT start_date, end_date FROM events WHERE eid = %s
+            """,
+            (eid,))
+
+        row = self.db.fetchone()
+        if row is None:
+            return {'error': 'Event does not exist', 'status': 409}
+
+        start_old, end_old = row
+
+        self.db.execute("""
                 UPDATE events SET title = %s, event_location = %s, start_date = %s,
                                                     end_date = %s, description = %s, image = %s
-                WHERE eid = %s
-                RETURNING eid
+                WHERE eid = %s RETURNING eid
             """,
             (title, location, start, end, description, image, eid))
 
-        if self.db.fetchone() is None:
-            return {'error': 'Event does not exist', 'status': 409}
-
-        return {}
+        return {
+            'start_old': start_old,
+            'end_old': end_old
+        }
 
     def delete_events(self, uid, token, events):
 

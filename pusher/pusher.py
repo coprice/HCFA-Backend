@@ -35,6 +35,7 @@ class Pusher(object):
                 rejected_tokens.append(token)
             else:
                 frame.add_item(token, payload, identifier, expiry, priority)
+        self.failed = set()
 
         if len(rejected_tokens) != len(tokens):
             try:
