@@ -626,7 +626,7 @@ class DB:
                 """,
                 (uid, cid))
 
-        new_members = list(set(member_ids + admin_ids) - set(past_member_ids))
+        new_members = list(set(member_ids + admin_ids) - set(map(lambda x: x[0], past_member_ids)))
         return {'new_members': new_members}
 
     def delete_course(self, uid, token, cid):
@@ -977,7 +977,7 @@ class DB:
                 """,
                 (uid, tid))
 
-        new_members = list(set(member_ids + admin_ids) - set(past_member_ids))
+        new_members = list(set(member_ids + admin_ids) - set(map(lambda x: x[0], past_member_ids)))
         return {'new_members': new_members}
 
     def delete_team(self, uid, token, tid):
