@@ -1,5 +1,6 @@
 import psycopg2 as psg
 import hashlib, secrets
+from json import loads
 
 from config.config import config
 
@@ -329,34 +330,52 @@ class DB:
     def get_events(self):
 
         self.db.execute("""
-                SELECT * FROM events
-                WHERE (current_timestamp - interval '4 hours') <= TO_TIMESTAMP(end_date, 'YYYY-MM-DD HH24:MI:SS')
+                SELECT * FROM events WHERE repeat_days IS NULL AND
+                    (current_timestamp - interval '4 hours') <=
+                        TO_TIMESTAMP(end_date, 'YYYY-MM-DD HH24:MI:SS')
                 ORDER BY TO_TIMESTAMP(start_date, 'YYYY-MM-DD HH24:MI:SS')
             """)
 
         upcoming_rows = map(lambda x: {'eid': x[0], 'title': x[1],
                                        'location': x[2], 'start': x[3],
                                        'end': x[4], 'description': x[5],
-                                       'image': x[6]},
+                                       'repeat': x[6], 'end_repeat': x[7],
+                                       'repeat_days': x[8], 'image': x[9]},
                             self.db.fetchall())
 
         self.db.execute("""
-                SELECT * FROM events
-                WHERE (current_timestamp - interval '4 hours') > TO_TIMESTAMP(end_date, 'YYYY-MM-DD HH24:MI:SS')
+                SELECT * FROM events WHERE repeat_days IS NULL AND
+                    (current_timestamp - interval '4 hours') >
+                        TO_TIMESTAMP(end_date, 'YYYY-MM-DD HH24:MI:SS')
                 ORDER BY TO_TIMESTAMP(start_date, 'YYYY-MM-DD HH24:MI:SS') DESC
             """)
 
-        past_rows = map(lambda x: {'eid': x[0], 'title': x[1], 'location': x[2],
-                                   'start': x[3], 'end': x[4],
-                                   'description': x[5], 'image': x[6]},
+        past_rows = map(lambda x: {'eid': x[0], 'title': x[1],
+                                   'location': x[2], 'start': x[3],
+                                   'end': x[4], 'description': x[5],
+                                   'repeat': x[6], 'end_repeat': x[7],
+                                   'repeat_days': x[8], 'image': x[9]},
                         self.db.fetchall())
 
+        self.db.execute("""
+                SELECT * FROM events WHERE repeat_days IS NOT NULL
+            """)
+
+        repeat_rows = map(lambda x: {'eid': x[0], 'title': x[1],
+                                     'location': x[2], 'start': x[3],
+                                     'end': x[4], 'description': x[5],
+                                    'repeat': x[6], 'end_repeat': x[7],
+                                    'repeat_days': loads(x[8]) if x[8] else x[8], 'image': x[9]},
+                          self.db.fetchall())
+
         return {
-            'upcoming_events': upcoming_rows,
-            'past_events': past_rows
+            'upcoming_events': list(upcoming_rows),
+            'past_events': list(past_rows),
+            'repeat_events': list(repeat_rows)
         }
 
-    def create_event(self, uid, token, title, location, start, end, description, image):
+    def create_event(self, uid, token, title, location, start, end,
+                     description, repeat, end_repeat, repeat_days, image):
 
         self.db.execute("""
                 SELECT admin, leader FROM users WHERE uid = %s AND token = %s
@@ -369,11 +388,13 @@ class DB:
 
         self.db.execute("""
                 INSERT INTO events (title, event_location, start_date,
-                                    end_date, description, image)
-                VALUES (%s, %s, %s, %s, %s, %s)
+                                    end_date, description, repeat,
+                                    end_repeat, repeat_days, image)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING eid
             """,
-            (title, location, start, end, description, image))
+            (title, location, start, end, description,
+             repeat, end_repeat, repeat_days, image))
 
         row = self.db.fetchone()
         if row is None:
@@ -386,7 +407,7 @@ class DB:
         }
 
     def update_event(self, uid, token, eid, title, location, start, end,
-                     description, image):
+                     description, repeat, end_repeat, repeat_days, image):
 
         self.db.execute("""
                 SELECT admin, leader FROM users WHERE uid = %s AND token = %s
@@ -410,10 +431,12 @@ class DB:
 
         self.db.execute("""
                 UPDATE events SET title = %s, event_location = %s, start_date = %s,
-                                                    end_date = %s, description = %s, image = %s
+                                  end_date = %s, description = %s, repeat = %s,
+                                  end_repeat = %s, repeat_days = %s, image = %s
                 WHERE eid = %s RETURNING eid
             """,
-            (title, location, start, end, description, image, eid))
+            (title, location, start, end, description,
+             repeat, end_repeat, reapeat_days, image, eid))
 
         return {
             'start_old': start_old,
@@ -475,7 +498,7 @@ class DB:
 
         return {
             'user_courses': user_courses,
-            'courses': map(lambda course: self.format_course(course, users), courses)
+            'courses': list(map(lambda course: self.format_course(course, users), courses))
         }
 
     def create_course(self, uid, token, leader_first, leader_last, year,

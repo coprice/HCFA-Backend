@@ -17,6 +17,9 @@ CREATE TABLE events(eid SERIAL PRIMARY KEY,
                     start_date VARCHAR NOT NULL,
                     end_date VARCHAR NOT NULL,
                     description VARCHAR NOT NULL,
+                    repeat VARCHAR,
+                    end_repeat VARCHAR,
+                    repeat_days VARCHAR,
                     image VARCHAR)
 
 CREATE TABLE courses(cid SERIAL PRIMARY KEY,

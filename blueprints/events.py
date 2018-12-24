@@ -2,6 +2,7 @@ from sanic.response import json as json_response
 from sanic import Blueprint
 from datetime import datetime
 from humanize import number
+from json import dumps
 
 from db.db import db
 from pusher.pusher import pusher
@@ -36,10 +37,18 @@ async def create_event(request):
         return json_response({'error': 'Bad request'}, status=400)
 
     title = body['title']
+    repeat, end_repeat, repeat_days = None, None, None
 
-    res = db.create_event(body['uid'], body['token'], title, \
-                          body['location'], body['start'], \
-                          body['end'], body['description'], body['image'])
+    if 'repeat' in body:
+        repeat = body['repeat']
+    if 'end_repeat' in body:
+        end_repeat = body['end_repeat']
+    if 'repeat_days' in body:
+        repeat_days = dumps(body['repeat_days'])
+
+    res = db.create_event(body['uid'], body['token'], title, body['location'],
+                          body['start'], body['end'], body['description'],
+                          repeat, end_repeat, repeat_days, body['image'])
 
     if 'error' in res:
         return json_response({'error': res['error']}, status=res['status'])
@@ -76,9 +85,18 @@ async def update_event(request):
         return json_response({'error': 'Bad request'}, status=400)
 
     title, start, end = body['title'], body['start'], body['end']
-    res = db.update_event(body['uid'], body['token'], body['eid'],
-                          title, body['location'], start, end,
-                          body['description'], body['image'])
+    repeat, end_repeat, repeat_days = None, None, None
+
+    if 'repeat' in body:
+        repeat = body['repeat']
+    if 'end_repeat' in body:
+        end_repeat = body['end_repeat']
+    if 'repeat_days' in body:
+        repeat_days = dumps(body['repeat_days'])
+
+    res = db.update_event(body['uid'], body['token'], body['eid'], title,
+                          body['location'], start, end, body['description'],
+                          repeat, end_repeat, repeat_days, body['image'])
 
     if 'error' in res:
         return json_response({'error': res['error']}, status=res['status'])
