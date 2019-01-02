@@ -37,7 +37,7 @@ async def get_teams(request):
 #     token: String,
 #     name: String,
 #     description: String,
-#     leaders: String,
+#     leaders: [String],
 #     meetings: [Optional] {String:String},
 #     members: [String],
 #     admins: [String]

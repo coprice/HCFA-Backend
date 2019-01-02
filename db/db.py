@@ -1285,8 +1285,8 @@ class DB:
             admin_ids.append(uid)
         return member_ids, admin_ids
 
+    # note: user = (cid, first_name, last_name, email, is_admin, image_url)
     def extract_user_info(self, uid, users):
-
         member_info, member_emails = [], []
         for user in filter(lambda user: user[0] == uid and not user[4], users):
             member_info.append(('{} {}'.format(user[1], user[2]), user[5]))
