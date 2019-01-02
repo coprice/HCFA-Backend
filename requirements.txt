@@ -7,7 +7,7 @@ idna==2.7
 Jinja2==2.10
 MarkupSafe==1.0
 psycopg2-binary==2.7.5
-requests==2.19.1
+requests==2.20.0
 sanic==0.7.0
 ujson==1.35
 urllib3==1.23
