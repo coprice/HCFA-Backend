@@ -1,6 +1,6 @@
 # HCFA Backend
 
-### running locally
+### Running Locally
 * clone this repository
 * install python 3
 * run a postgresql database named `hcfa_app` and create the necessary tables with the commands specified in `tables.sql`
@@ -14,7 +14,9 @@
 
 ### Endpoint Overview
 
-Each endpoint is for the current HCFA app api at [https://hcfa-app.com](https://hcfa-app.com). All responses are JSON and the following documentation assumes no error occurs. If an error occurs in any endpoint a JSON object is returned with an error message saved under the key "error".
+* each endpoint is for the current HCFA app api at [https://hcfa-app.com](https://hcfa-app.com)
+* all responses are JSON objects
+* the following documentation assumes no error occurs, but if an error occurs a JSON object is returned containing an "error" key, who's value describes the error
 
 Endpoints
 ======
