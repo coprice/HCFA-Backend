@@ -238,6 +238,7 @@ Endpoints
 **request**:
 
 {
+
 &nbsp;&nbsp;"uid" : int,
 
 &nbsp;&nbsp;"token" : string,
@@ -408,7 +409,6 @@ Endpoints
 {
 
 &nbsp;&nbsp;"uid" : int,
-
 
 &nbsp;&nbsp;"token" : string,
 
