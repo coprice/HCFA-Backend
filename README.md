@@ -9,7 +9,7 @@
 * install the dependencies: `pip3 install -r requirements.txt`
 * for push notifications, I used PyAPNs, which (as of now) has not updated PyPi to include Python 3 compatibility; to get around this, clone everything from [here](https://github.com/djacobs/PyAPNs/tree/fce9e33c62a0cef8eebcd8b1a293d66be0b45480) and name the cloned repository `apns`
 * from the `static` directory, clone the semantic ui css distribution, which can be found [here](https://github.com/Semantic-Org/Semantic-UI-CSS) and name the cloned repository `semantic`
-* you might notice some references to a config file and Config class; figure out what that is used for and can make your own
+* you might notice some references to a config file and Config class; figure out what that is used for and make your own
 * run the server: `python3 main.py`
 
 ### Endpoint Overview
