@@ -14,6 +14,21 @@ class DB:
         conn.autocommit = True
         self.db = conn.cursor()
 
+    def get_users(self, uid, token):
+
+        self.db.execute("""
+                SELECT admin FROM users WHERE uid = %s AND token = %s
+            """,
+            (uid, token))
+
+        row = self.db.fetchone()
+        if row is None or not row[0]:
+            return {'error': 'Session Expired', 'status': 403}
+
+        self.db.execute('SELECT first_name, last_name, email FROM users')
+
+        return {'users': self.db.fetchall()}
+
     def register_user(self, first_name, last_name, email, password):
 
         email = email.lower()
@@ -1287,17 +1302,19 @@ class DB:
 
     # note: user = (cid, first_name, last_name, email, is_admin, image_url)
     def extract_user_info(self, uid, users):
+
         member_info, member_emails = [], []
         for user in filter(lambda user: user[0] == uid and not user[4], users):
-            member_info.append(('{} {}'.format(user[1], user[2]), user[5]))
+            member_info.append(('{} {}'.format(user[1], user[2]), user[3], user[5]))
             member_emails.append(user[3])
 
-        admin_emails = []
+        admin_info, admin_emails = [], []
         for user in filter(lambda user: user[0] == uid and user[4], users):
+            admin_info.append(('{} {}'.format(user[1], user[2]), user[3]))
             admin_emails.append(user[3])
 
         return ({'info': member_info, 'emails': member_emails},
-                {'emails': admin_emails})
+                {'info': admin_info, 'emails': admin_emails})
 
     def format_team(self, team, users):
 

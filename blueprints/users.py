@@ -10,6 +10,32 @@ from db.db import db
 users = Blueprint('users')
 baseURI = '/users'
 
+
+# GET - /users?uid={uid}&token={token}
+# {
+#     uid: int,
+#     token: string
+# }
+@users.route(baseURI, methods=['GET'])
+async def get_users(request):
+    args = request.args
+
+    if 'uid' not in args or 'token' not in args:
+        return json_response({'error': 'Bad request'}, status=400)
+
+    uid = None
+    try:
+        uid = int(args['uid'][0])
+    except:
+        return json_response({'error': 'Bad request'}, status=400)
+
+    res = db.get_users(uid, args['token'][0])
+
+    if 'error' in res:
+        return json_response({'error': res['error']}, status=res['status'])
+
+    return json_response(res, status=200)
+
 # POST - /users/register
 # {
 #     first_name: string,
